@@ -1,0 +1,5 @@
+<resources>
+    <!-- Compose draws all UI; the Activity theme just needs to be borderless.
+         Colors come from the Compose theme (Material You) at runtime. -->
+    <style name="Theme.BasicSms" parent="@android:style/Theme.Material.Light.NoActionBar" />
+</resources>

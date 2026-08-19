@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.BasicContacts" parent="@android:style/Theme.Material.NoActionBar" />
+</resources>

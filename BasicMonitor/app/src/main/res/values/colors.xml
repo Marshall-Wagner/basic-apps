@@ -1,0 +1,5 @@
+<resources>
+    <!-- Cyan — distinct from the suite's other icons (Phone green, SMS blue, Keyboard slate,
+         Camera near-black, Contacts purple, Clock amber). Reads as a "console / diagnostics" app. -->
+    <color name="ic_launcher_background">#00838F</color>
+</resources>

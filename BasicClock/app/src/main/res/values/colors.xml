@@ -1,0 +1,5 @@
+<resources>
+    <!-- Amber — distinct from the suite's other icons (Phone green, SMS blue, Keyboard
+         slate, Camera near-black, Contacts purple). Warm, fitting for an alarm clock. -->
+    <color name="ic_launcher_background">#EF6C00</color>
+</resources>

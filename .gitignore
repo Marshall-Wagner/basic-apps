@@ -1,0 +1,45 @@
+# ─── Claude session transcripts — NEVER publish (personal history) ───
+claude_chat_*.md
+claude_chat_*_attachments/
+export_claude_chat.py
+
+# ─── Real-data screenshots pulled out of docs/ — NEVER publish (personal data) ───
+_private-shots/
+
+# ─── Built APKs staged for GitHub Releases — not tracked in the repo ───
+_release-apks/
+
+# ─── Empty/abandoned skeleton — not a real app ───
+BasicLauncher/
+
+# ─── Signing material — NEVER publish ───
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# ─── Local machine config (SDK path etc.) ───
+**/local.properties
+
+# ─── Gradle / Android build outputs ───
+**/build/
+**/.gradle/
+**/.kotlin/
+**/.cxx/
+**/.externalNativeBuild/
+captures/
+
+# Release build outputs — shipped via GitHub Releases, not committed
+**/*.apk
+**/app/release/output-metadata.json
+**/app/release/baselineProfiles/
+
+# ─── Android Studio / IntelliJ ───
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ─── OS cruft ───
+.DS_Store
+Thumbs.db

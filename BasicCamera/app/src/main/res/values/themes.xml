@@ -1,0 +1,7 @@
+<resources>
+    <!-- Compose draws all UI over a full-bleed camera preview, so the Activity theme
+         just needs to be borderless and black behind the preview. -->
+    <style name="Theme.BasicCamera" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

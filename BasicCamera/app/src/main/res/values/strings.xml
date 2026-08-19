@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Basic Camera</string>
+    <string name="permission_rationale">Basic Camera needs the camera (and the microphone for video) to work. Saving goes to your gallery only — this app has no internet permission, so nothing leaves the device.</string>
+    <string name="grant_access">Grant camera access</string>
+</resources>

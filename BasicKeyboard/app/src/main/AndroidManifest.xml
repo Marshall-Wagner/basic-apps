@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Vibration for key-press haptics. NO INTERNET permission on purpose: a keyboard
+         sees everything you type, so this app has no way to send data anywhere. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Android 11+ package visibility: needed so the 🔑 strip button can find and
+         launch Proton Pass via getLaunchIntentForPackage(). Visibility only — no data
+         is sent anywhere (this app has no INTERNET permission). -->
+    <!-- The password-manager shortcut opens whichever of these is installed. Each must be
+         listed so Android 11+ package visibility lets us see it (see PasswordManagers.kt). -->
+    <queries>
+        <package android:name="proton.android.pass" />
+        <package android:name="com.x8bit.bitwarden" />
+        <package android:name="com.kunzisoft.keepass.free" />
+        <package android:name="com.kunzisoft.keepass.libre" />
+        <package android:name="keepass2android.keepass2android" />
+        <package android:name="keepass2android.keepass2android_nonet" />
+        <package android:name="io.enpass.app" />
+        <package android:name="com.onepassword.android" />
+        <package android:name="com.lastpass.lpandroid" />
+        <package android:name="com.dashlane" />
+        <package android:name="com.callpod.android_apps.keeper" />
+        <package android:name="com.nordpass.android.app.password.manager" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.BasicKeyboard">
+
+        <!-- Setup / help screen -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The keyboard itself: an InputMethodService the system binds to. -->
+        <service
+            android:name=".ime.BasicKeyboardService"
+            android:exported="true"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
+    </application>
+</manifest>

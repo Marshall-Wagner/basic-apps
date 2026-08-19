@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Basic Clock</string>
+    <string name="channel_alarm_name">Alarms</string>
+    <string name="channel_alarm_desc">Rings when a time-zone alarm goes off</string>
+</resources>

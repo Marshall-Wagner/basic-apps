@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Basic Keyboard</string>
+    <string name="subtype_english">English</string>
+    <string name="subtype_russian">Русский</string>
+</resources>
