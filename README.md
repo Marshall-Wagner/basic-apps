@@ -40,6 +40,8 @@ Kotlin · Jetpack Compose · Coroutines & Flow · Paging 3 · Room · CameraX ·
 
 **Theming:** Material 3, following your system light/dark theme (switch it in Android's display settings, since there's no in-app toggle). The SMS, dialer, and contacts apps also adopt Material You dynamic color on Android 12+; the camera uses a dark viewfinder by design.
 
+**Footprint:** each app uses roughly **40-45 MB of RAM** while running (idle, on its main screen) and effectively **0% CPU at rest** (no background work, no network). Most of that is the shared Jetpack Compose + Android runtime baseline every Compose app carries, so these are about as lean as a Compose UI app gets. (RAM measured as PSS, so it is representative rather than exact for any given phone.)
+
 ## Download & install
 
 Prebuilt, signed APKs are on the **[Releases page](https://github.com/Marshall-Wagner/basic-apps/releases/latest)**. Grab the apps you want and sideload them: allow "install unknown apps" for your file manager, then open each APK.
