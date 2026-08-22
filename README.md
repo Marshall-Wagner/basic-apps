@@ -36,7 +36,7 @@ Most of these live in parts of the Android platform that ordinary apps never tou
 ## Tech stack
 
 Kotlin · Jetpack Compose · Coroutines & Flow · Paging 3 · Room · CameraX · Material 3
-`minSdk 26` · `compileSdk / targetSdk 35` · arm64 · R8 full-mode release builds
+`minSdk 26` (BasicCamera `29` / Android 10) · `compileSdk / targetSdk 35` · arm64 · R8 full-mode release builds
 
 **Theming:** Material 3, following your system light/dark theme (switch it in Android's display settings, since there's no in-app toggle). The SMS, dialer, and contacts apps also adopt Material You dynamic color on Android 12+; the camera uses a dark viewfinder by design.
 
@@ -46,7 +46,7 @@ Each app is an independent Gradle project; open any one in **Android Studio** an
 
 ## Status & scope
 
-A personal project, built and tested primarily on an **ASUS ROG Phone 6 (Android 14)** and **ROG Phone 5 (Android 11)**. Many decisions (and a few workarounds) are tuned to those devices, so behavior may differ on other phones or ROMs. Provided **as-is**, with limited support.
+A personal project, built and tested primarily on an **ASUS ROG Phone 6 (Android 14)** and **ROG Phone 5 (Android 11)**, with several apps also checked on an **HTC 10 (Android 8, the `minSdk 26` floor)**. BasicKeyboard, BasicClock, BasicMonitor, and BasicContacts run fully on the HTC 10; BasicSms and BasicPhone install and run there too, but their telephony features (real send/receive and calls) need cell service that phone lacks, so those paths were validated only on the ROG phones. **BasicCamera requires Android 10 (API 29)** and so cannot be installed on the HTC 10 at all. Many decisions (and a few workarounds) are tuned to these devices, so behavior may differ on other phones or ROMs. Provided **as-is**, with limited support.
 
 ## License
 

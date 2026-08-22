@@ -23,8 +23,8 @@ A minimal **camera app** built on CameraX, photo, video, and HEIC, fully offline
 
 - `LifecycleCameraController` with `ResolutionSelector` / Camera2 interop
 - Honestly surfaces device/HAL limits (e.g. a hardware-capped zoom range) rather than faking capability
-- API-guarded capture paths across Android 8-15
+- API-guarded capture paths across Android 10-15
 
 ## Requirements
 
-`minSdk 26`. Permissions: `CAMERA`, `RECORD_AUDIO` (for video).
+`minSdk 29` (Android 10). This is the one app in the suite that needs Android 10 rather than 8, for its HEIC encoder and CameraX video pipeline, so it will **not install on older devices** such as the HTC 10 (Android 8). Permissions: `CAMERA`, `RECORD_AUDIO` (for video).
