@@ -6,9 +6,6 @@ export_claude_chat.py
 # ─── Real-data screenshots pulled out of docs/ — NEVER publish (personal data) ───
 _private-shots/
 
-# ─── Built APKs staged for GitHub Releases — not tracked in the repo ───
-_release-apks/
-
 # ─── Empty/abandoned skeleton — not a real app ───
 BasicLauncher/
 
