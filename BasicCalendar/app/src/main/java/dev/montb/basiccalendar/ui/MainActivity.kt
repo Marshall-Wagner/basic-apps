@@ -92,6 +92,7 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -383,6 +384,8 @@ private fun EventRow(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
+    val is24 = remember { DateFormat.is24HourFormat(context) }
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -400,6 +403,16 @@ private fun EventRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
+            event.anchorDate?.let { d ->
+                localTimeHint(d, event.hour, event.minute, event.zoneId, is24)?.let { hint ->
+                    Text(
+                        hint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
             val sub = buildString {
                 append(repeatSummary(event.repeat))
                 if (event.label.isNotBlank()) append("  ·  ${event.label}")
@@ -416,6 +429,22 @@ private fun repeatSummary(repeat: Repeat): String = when (repeat) {
     Repeat.WEEKLY -> "Weekly"
     Repeat.MONTHLY -> "Monthly"
     Repeat.YEARLY -> "Yearly"
+}
+
+/**
+ * When [zoneId] differs from the phone's own zone, the SAME instant rendered in the device's
+ * local time, e.g. "7:00 PM, Thu Aug 27 your time (Chicago)". This is the moment the alarm
+ * actually rings where you are, so a "09:00 in Tokyo" event can't be mistaken for 9am local.
+ * Returns null when both zones resolve to the same wall-clock time (nothing to clarify).
+ */
+private fun localTimeHint(date: LocalDate, hour: Int, minute: Int, zoneId: String, is24: Boolean): String? {
+    val zone = runCatching { ZoneId.of(zoneId) }.getOrNull() ?: return null
+    val eventLdt = runCatching { date.atTime(hour, minute) }.getOrNull() ?: return null
+    val deviceZone = ZoneId.systemDefault()
+    val localLdt = eventLdt.atZone(zone).withZoneSameInstant(deviceZone).toLocalDateTime()
+    if (localLdt == eventLdt) return null
+    val pattern = if (is24) "HH:mm, EEE MMM d" else "h:mm a, EEE MMM d"
+    return "${localLdt.format(DateTimeFormatter.ofPattern(pattern))} your time (${Zones.cityLabel(deviceZone.id)})"
 }
 
 /* ----------------------------------- editor ----------------------------------- */
@@ -468,6 +497,16 @@ private fun EventEditorDialog(
 
                 Text("Time zone", style = MaterialTheme.typography.labelMedium)
                 PickerRow("${Zones.label(zoneId)}  (${Zones.offsetLabel(zoneId)})") { pickingZone = true }
+                // Live "your local time" conversion, so a foreign-zone event can't be mistaken
+                // for local time. Recomputes as the date, time, or zone changes.
+                localTimeHint(date, timeState.hour, timeState.minute, zoneId, is24)?.let { hint ->
+                    Text(
+                        "Rings $hint",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                    )
+                }
 
                 Spacer(Modifier.height(8.dp))
                 Text("Repeat", style = MaterialTheme.typography.labelMedium)

@@ -38,6 +38,8 @@ Most of these live in parts of the Android platform that ordinary apps never tou
 Kotlin · Jetpack Compose · Coroutines & Flow · Paging 3 · Room · CameraX · Material 3
 `minSdk 26` · `compileSdk / targetSdk 35` · arm64 · R8 full-mode release builds
 
+**Theming:** Material 3, following your system light/dark theme (switch it in Android's display settings, since there's no in-app toggle). The SMS, dialer, and contacts apps also adopt Material You dynamic color on Android 12+; the camera uses a dark viewfinder by design.
+
 ## Building
 
 Each app is an independent Gradle project; open any one in **Android Studio** and run it. See **[BUILD.md](BUILD.md)** for details. Requires **JDK 17 or 21** (not 22+).

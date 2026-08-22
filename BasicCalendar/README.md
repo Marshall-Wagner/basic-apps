@@ -8,7 +8,7 @@ A minimal **date and time-zone alarm calendar**: set an alarm for a specific fut
 
 | Month grid & upcoming | New event |
 |---|---|
-| <img src="docs/month-grid.png" width="250" alt="Month grid with event dots and the upcoming list"> | <img src="docs/editor.png" width="250" alt="New event editor: date, time, time zone, and repeat"> |
+| <img src="docs/month-grid.png" width="250" alt="Month grid with event dots and the upcoming list"> | <img src="docs/editor.png" width="250" alt="New event editor with a live cross-time-zone conversion showing the local ring time"> |
 
 > Demo events, captured on an emulator.
 
