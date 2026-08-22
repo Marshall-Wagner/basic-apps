@@ -40,6 +40,12 @@ Kotlin · Jetpack Compose · Coroutines & Flow · Paging 3 · Room · CameraX ·
 
 **Theming:** Material 3, following your system light/dark theme (switch it in Android's display settings, since there's no in-app toggle). The SMS, dialer, and contacts apps also adopt Material You dynamic color on Android 12+; the camera uses a dark viewfinder by design.
 
+## Download & install
+
+Prebuilt, signed APKs are on the **[Releases page](https://github.com/Marshall-Wagner/basic-apps/releases/latest)**. Grab the apps you want and sideload them: allow "install unknown apps" for your file manager, then open each APK.
+
+**Requirements:** an **`arm64-v8a`** (64-bit ARM) phone, which is essentially every phone from ~2017 on. The APKs are arm64 only and will **not** install on 32-bit ARM (`armeabi-v7a`) or `x86` devices. **Android 8+** (API 26) for every app except **BasicCamera**, which needs **Android 10+** (API 29). Each release also ships a `SHA256SUMS.txt` so you can verify downloads (`sha256sum -c SHA256SUMS.txt`).
+
 ## Building
 
 Each app is an independent Gradle project; open any one in **Android Studio** and run it. See **[BUILD.md](BUILD.md)** for details. Requires **JDK 17 or 21** (not 22+).

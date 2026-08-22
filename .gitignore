@@ -43,3 +43,6 @@ captures/
 # ─── OS cruft ───
 .DS_Store
 Thumbs.db
+
+# Local archive of APKs published to GitHub Releases
+published-apks/
