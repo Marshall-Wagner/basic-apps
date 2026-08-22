@@ -1,0 +1,5 @@
+<resources>
+    <!-- Plain framework theme (no Material Components dependency needed): Compose's
+         MaterialTheme handles the actual content colors. Light here; dark in values-night. -->
+    <style name="Theme.BasicCalendar" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

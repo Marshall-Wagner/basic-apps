@@ -3,12 +3,13 @@
 How to build a fast, optimized, installable APK of each app and get it onto your
 ROG Phone 6. This is for your own sideloading, no Play Store / F-Droid involved.
 
-Applies to all seven apps, same steps for each:
+Applies to all eight apps, same steps for each:
 - `BasicSms/`      → `dev.montb.basicsms`
 - `BasicPhone/`    → `dev.montb.basicphone`
 - `BasicContacts/` → `dev.montb.basiccontacts`
 - `BasicKeyboard/` → `dev.montb.basickeyboard`
 - `BasicClock/`    → `dev.montb.basicclock`
+- `BasicCalendar/` → `dev.montb.basiccalendar`
 - `BasicMonitor/`  → `dev.montb.basicmonitor`
 - `BasicCamera/`   → `dev.montb.basiccamera`
 

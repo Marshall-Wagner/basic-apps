@@ -110,6 +110,8 @@ private fun ClockApp() {
     // Stopwatch state is hoisted here so it keeps running when you switch tabs.
     val stopwatch = remember { StopwatchState() }
 
+    fun reload() { alarms.clear(); alarms.addAll(AlarmStore.getAll(context)) }
+
     // Ask for notification permission (13+) so the full-screen alarm can post.
     val permLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -129,13 +131,17 @@ private fun ClockApp() {
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val obs = LifecycleEventObserver { _, e ->
-            if (e == Lifecycle.Event.ON_RESUME) fsiAllowed = fullScreenIntentAllowed(context)
+            if (e == Lifecycle.Event.ON_RESUME) {
+                fsiAllowed = fullScreenIntentAllowed(context)
+                // Re-sync the alarm rows with the store: a one-shot alarm that rang while we
+                // were away flipped itself off in the background (AlarmReceiver), so its toggle
+                // must now read off instead of staying stuck on.
+                reload()
+            }
         }
         lifecycleOwner.lifecycle.addObserver(obs)
         onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
     }
-
-    fun reload() { alarms.clear(); alarms.addAll(AlarmStore.getAll(context)) }
 
     Scaffold(
         topBar = {

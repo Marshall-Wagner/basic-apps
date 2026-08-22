@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Basic Calendar</string>
+    <string name="channel_alarm_name">Events</string>
+    <string name="channel_alarm_desc">Rings when a calendar event is due</string>
+</resources>

@@ -66,9 +66,14 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit) {
+    // Top-aligned, not centered: with verticalScroll, Arrangement.Center only behaves while
+    // the content fits (the tall ROG screens). On a shorter screen (HTC 10) the content
+    // overflows and centering pushes the lower options, square keys, grid, vibration, password
+    // picker, off the bottom into space the scroll can't reach, so they look cut off / dead.
+    // Top-aligning makes every option reachable by scrolling on any screen height.
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Basic Keyboard", style = MaterialTheme.typography.headlineMedium)
@@ -121,6 +126,8 @@ private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center
         )
+        // Breathing room so the last option clears the bottom edge when scrolled fully down.
+        Spacer(Modifier.height(24.dp))
     }
 }
 

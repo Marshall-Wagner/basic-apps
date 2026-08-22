@@ -170,13 +170,26 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
             // working" (visible, but taps go nowhere). applyLayout() restores the key grid.
             applyLayout()
         }
-        // Reflect the latest clipboard each time the keyboard shows, a copy may have happened
-        // while we were hidden, and onStartInput won't always fire for the same field.
+        // Fold the current clipboard into history AND reflect it, every time the keyboard
+        // shows. This is what actually accumulates history: the OS primary-clip listener does
+        // not fire for copies made in other apps (e.g. QQ) while we were hidden, so without
+        // capturing on show the strip would only ever echo the single live clip.
+        ClipboardStore.capture(this)
         if (::topStrip.isInitialized) topStrip.refresh(hideChips = passwordField)
+    }
+
+    /** The keyboard is being hidden. Cancel any in-flight key repeat / long-press so a held
+     *  backspace whose UP the host app swallowed (QQ hides the keyboard mid-press) can't keep
+     *  deleting whole words once we're no longer on screen. */
+    override fun onFinishInputView(finishingInput: Boolean) {
+        super.onFinishInputView(finishingInput)
+        if (::keyboardView.isInitialized) keyboardView.cancelPending()
     }
 
     override fun onStartInput(info: EditorInfo?, restarting: Boolean) {
         super.onStartInput(info, restarting)
+        // A new field: drop any timer left over from the previous one before we start.
+        if (::keyboardView.isInitialized) keyboardView.cancelPending()
         // Reset to letters each time a new field is focused.
         mode = Mode.LETTERS
         shifted = false
@@ -186,7 +199,10 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         passwordField = info?.let { isPasswordField(it.inputType) } ?: false
         if (::keyboardView.isInitialized) {
             applyLayout()
-            // New field may follow a fresh copy elsewhere, refresh the strip's chips.
+            // A new field usually follows a fresh copy elsewhere (the copy -> focus field ->
+            // paste flow). Capture it now so history accumulates without relying on the OS
+            // clip listener, then refresh the strip's chips.
+            ClipboardStore.capture(this)
             if (::topStrip.isInitialized) topStrip.refresh(hideChips = passwordField)
         }
     }

@@ -1,0 +1,5 @@
+<resources>
+    <!-- Teal — distinct from the suite's other icons (Phone green, SMS blue, Keyboard slate,
+         Camera near-black, Contacts purple, Clock amber). Cool, calm, reads as a calendar. -->
+    <color name="ic_launcher_background">#00897B</color>
+</resources>

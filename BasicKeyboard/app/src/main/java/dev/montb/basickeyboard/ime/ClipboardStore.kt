@@ -30,10 +30,15 @@ object ClipboardStore {
         return result.toList().take(MAX)
     }
 
-    /** Call when the panel opens to fold the live clipboard into saved history. */
+    /** Fold the live clipboard into saved history (newest first). Safe to call often, e.g.
+     *  every time the keyboard shows: it no-ops when the current clip is already newest, so
+     *  repeated calls don't churn prefs. Calling it on each show is what actually accumulates
+     *  history, since the OS primary-clip listener doesn't fire for copies made in other apps
+     *  while the keyboard is backgrounded (Android 10+ clipboard privacy). */
     fun capture(context: Context) {
         val clip = currentClip(context) ?: return
         val history = loadHistory(context).toMutableList()
+        if (history.firstOrNull() == clip) return   // already newest: nothing to write
         history.remove(clip)
         history.add(0, clip)
         saveHistory(context, history.take(MAX))

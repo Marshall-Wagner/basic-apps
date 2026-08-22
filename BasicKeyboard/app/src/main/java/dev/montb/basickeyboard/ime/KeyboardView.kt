@@ -92,6 +92,12 @@ class KeyboardView(
     private val backspaceRunnable = object : Runnable {
         override fun run() {
             backspaceRepeats++
+            // Backstop: if the finger-up was lost entirely with no lifecycle change to catch
+            // (cancelPending() handles the normal cases), don't auto-repeat forever. The cap is
+            // generous, far past any deliberate hold-to-clear, so it never cuts a real bulk
+            // delete short; it just bounds a genuinely stuck timer. Lift and press again to
+            // continue past it.
+            if (backspaceRepeats > MAX_AUTO_REPEATS) { stopBackspaceRepeat(); return }
             if (backspaceRepeats >= WORD_DELETE_AFTER) {
                 listener.onBackspaceWord()
             } else {
@@ -113,11 +119,31 @@ class KeyboardView(
         backspaceRepeats = 0
     }
 
+    /**
+     * Drop every pending touch timer and tracked pointer. Called when the keyboard is
+     * hidden, detached, or moved to a new field. Without this, a press whose ACTION_UP the
+     * host app swallowed, notably QQ hiding/re-showing the keyboard mid-press, leaves the
+     * held-backspace auto-repeat running: it keeps firing and escalates to deleting whole
+     * words of text the user never meant to erase. A stuck long-press would likewise fire
+     * into the next field. Cancelling on every lifecycle change stops both.
+     */
+    fun cancelPending() {
+        stopBackspaceRepeat()
+        pointers.values.forEach { it.longPress?.let { r -> handler.removeCallbacks(r) } }
+        pointers.clear()
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        cancelPending()
+    }
+
     private companion object {
         const val FIRST_REPEAT_DELAY_MS = 400L  // pause before auto-repeat kicks in
         const val REPEAT_START_MS = 90L
         const val REPEAT_MIN_MS = 30L
         const val WORD_DELETE_AFTER = 12        // after ~12 char-deletes, delete whole words
+        const val MAX_AUTO_REPEATS = 120        // safety cap: stop a stuck repeat (~108 word-deletes)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

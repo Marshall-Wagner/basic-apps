@@ -1,0 +1,33 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A wall calendar: body, two binder rings, a header divider, and day dots, centered
+         in the adaptive-icon safe zone. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M44,32 L44,42" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M64,32 L64,42" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M34,40 L74,40 L74,78 L34,78 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:pathData="M34,52 L74,52" />
+    <path android:fillColor="#FFFFFF" android:pathData="M43,61 a2,2 0 1 0 0.01,0 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,61 a2,2 0 1 0 0.01,0 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M65,61 a2,2 0 1 0 0.01,0 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M43,70 a2,2 0 1 0 0.01,0 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,70 a2,2 0 1 0 0.01,0 z" />
+</vector>
