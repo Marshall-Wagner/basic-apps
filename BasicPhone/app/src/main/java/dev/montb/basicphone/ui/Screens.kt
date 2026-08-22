@@ -79,6 +79,9 @@ import dev.montb.basicphone.util.Prefs
 import dev.montb.basicphone.util.NumberLookup
 import dev.montb.basicphone.util.Sims
 import dev.montb.basicphone.util.Voicemail
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
@@ -113,6 +116,17 @@ fun HomeScreen(
             snapshotFlow { calls.itemCount }
                 .distinctUntilChanged()
                 .collect { MissedCalls.clear(context) }
+        }
+    }
+    // The call log needs READ_CALL_LOG, which is denied on a fresh install until the user grants
+    // it (or the app is made the default dialer, which grants it). Re-check on each resume and
+    // refresh the list the moment it becomes available, so it fills in without a manual reopen.
+    var callLogGranted by remember { mutableStateOf(hasCallLogPermission(context)) }
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            val granted = hasCallLogPermission(context)
+            if (granted && !callLogGranted) calls.refresh()
+            callLogGranted = granted
         }
     }
     var menuOpen by remember { mutableStateOf(false) }
@@ -773,3 +787,7 @@ fun SearchEngineDialog(onDismiss: () -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
+
+/** True when READ_CALL_LOG is granted (auto-granted to the default dialer, or via the prompt). */
+private fun hasCallLogPermission(context: Context): Boolean =
+    context.checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED

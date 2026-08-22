@@ -26,8 +26,15 @@ class CallLogPagingSource(private val context: Context) : PagingSource<Int, Call
     }
 
     init {
-        context.contentResolver.registerContentObserver(CallLog.Calls.CONTENT_URI, true, observer)
-        registerInvalidatedCallback { context.contentResolver.unregisterContentObserver(observer) }
+        // Registering an observer on the call-log provider opens it, which needs READ_CALL_LOG.
+        // On a fresh install that isn't the default dialer yet, that permission is denied and this
+        // would throw SecurityException and crash on launch (One UI surfaces it on the main thread),
+        // so guard it. Once the permission is granted the list refreshes, and the fresh source then
+        // registers its observer successfully. The load() query is already SecurityException-safe.
+        runCatching {
+            context.contentResolver.registerContentObserver(CallLog.Calls.CONTENT_URI, true, observer)
+            registerInvalidatedCallback { context.contentResolver.unregisterContentObserver(observer) }
+        }
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, CallLogEntry> {
