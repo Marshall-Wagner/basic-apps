@@ -13,10 +13,10 @@ A minimal **offline keyboard**: English & Russian, drawn on a plain Canvas, no i
 ## Features
 
 - **English + Russian** layouts (tap the 🌐 globe to switch), number row, two symbol pages, emoji panel
-- **Long-press** for accents and numbers; **multi-touch key rollover** so fast typing never drops a key
+- **Long-press** for accents and numbers, plus multi-touch key rollover so fast typing never drops a key
 - **Held backspace** accelerates and switches to whole-word deletes
-- **Clipboard strip** with history that **ignores sensitive clips** (passwords/OTPs flagged `EXTRA_IS_SENSITIVE`), plus a **password-manager shortcut**
-- Adjustable **row height**, **square-key** and **compact-grid** styles, a **vibration** toggle, and automatic dark/light theming
+- **Clipboard strip** with history that ignores sensitive clips (passwords/OTPs flagged `EXTRA_IS_SENSITIVE`), plus a password-manager shortcut
+- **Adjustable layout**: row height, square-key and compact-grid styles, a vibration toggle, and automatic dark/light theming
 
 ## Notable implementation
 
@@ -27,6 +27,6 @@ A minimal **offline keyboard**: English & Russian, drawn on a plain Canvas, no i
 
 ## Requirements
 
-Enable under **Settings → Languages & input**, then select it as the active keyboard. `minSdk 26`.
+Enable under Settings → Languages & input, then select it as the active keyboard. `minSdk 26`.
 
 **Password key:** the 🔑 opens an installed supported manager (Proton Pass, Bitwarden, KeePassDX, 1Password, and more). The keyboard itself runs on Android 8+, but the popular managers (Proton Pass, Bitwarden) require a newer Android than 8 to install, so on very old devices there may be none to open and the shortcut won't be useful.

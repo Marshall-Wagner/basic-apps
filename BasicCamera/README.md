@@ -14,7 +14,7 @@ A minimal **camera app** built on CameraX, photo, video, and HEIC, fully offline
 
 - **Photo & video** with front/back switching and multi-lens selection
 - **HEIC capture** (`androidx.heifwriter`) as a toggle vs. JPEG, for smaller high-quality photos
-- **Aspect ratio** (4:3 / 16:9) and a **resolution / quality** picker (favoring maximum quality)
+- **Aspect ratio** (4:3 / 16:9) and a resolution / quality picker (favoring maximum quality)
 - **Pinch-to-zoom** with zoom presets and an on-screen indicator, tap-to-focus, flash
 - **Volume-button shutter** for one-handed capture
 - **Landscape UI rotation**, EXIF-location stripping, and open-in-gallery
@@ -27,4 +27,4 @@ A minimal **camera app** built on CameraX, photo, video, and HEIC, fully offline
 
 ## Requirements
 
-`minSdk 29` (Android 10). This is the one app in the suite that needs Android 10 rather than 8, for its HEIC encoder and CameraX video pipeline, so it will **not install on older devices** such as the HTC 10 (Android 8). Permissions: `CAMERA`, `RECORD_AUDIO` (for video).
+`minSdk 29` (Android 10). This is the one app in the suite that needs Android 10 rather than 8, for its HEIC encoder and CameraX video pipeline, so it will not install on older devices such as the HTC 10 (Android 8). Permissions: `CAMERA`, `RECORD_AUDIO` (for video).

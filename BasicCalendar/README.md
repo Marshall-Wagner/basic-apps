@@ -17,14 +17,14 @@ A minimal **date and time-zone alarm calendar**: set an alarm for a specific fut
 - **Month grid + event list**: a tappable month calendar with today ringed, the selected day highlighted, and a dot on days that have an alarm; the list below shows that day's events, or all upcoming events sorted by which fires next
 - **Date + time in a chosen time zone**: an event is anchored to a real calendar date and wall-clock time *in* a picked region, so it rings at the correct absolute moment across DST and even if the phone travels to another zone
 - **Repeats**: once, weekly, monthly, or yearly; a one-off switches itself off after ringing, repeats re-arm their next occurrence
-- **Full-screen ring** over the lock screen with **Snooze** and **Dismiss**, plus a per-event **ringtone picker**
+- **Full-screen ring** over the lock screen with Snooze and Dismiss, plus a per-event ringtone picker
 - **Survives reboot, clock, and time-zone changes**: alarms are re-armed on `BOOT_COMPLETED`, `TIME_SET`, and `TIMEZONE_CHANGED`, and re-checked each time the app opens
 
 ## Notable implementation
 
-- Recurrence resolves through a small `java.time` engine (`CalendarEvent.nextTrigger`) that searches forward for the next valid instant; repeats **skip** dates the calendar doesn't have (a monthly-on-the-31st only fires in 31-day months, a yearly Feb-29 only in leap years) rather than sliding onto a day you didn't pick
+- Recurrence resolves through a small `java.time` engine (`CalendarEvent.nextTrigger`) that searches forward for the next valid instant; repeats skip dates the calendar doesn't have (a monthly-on-the-31st only fires in 31-day months, a yearly Feb-29 only in leap years) rather than sliding onto a day you didn't pick
 - Rings via `AlarmManager.setAlarmClock`: exact and Doze-exempt, shows the status-bar alarm icon, and needs no `SCHEDULE_EXACT_ALARM` prompt (`USE_EXACT_ALARM` is auto-granted)
-- A foreground **media-playback service** produces the looping alarm sound and vibration itself, so the event is still heard when Android downgrades the full-screen intent to a heads-up notification (14+ without full-screen-intent access)
+- A foreground media-playback service produces the looping alarm sound and vibration itself, so the event is still heard when Android downgrades the full-screen intent to a heads-up notification (14+ without full-screen-intent access)
 - Events persist as hand-encoded JSON in private `SharedPreferences`, no database, no dependencies
 - Fully offline by design: the missing `INTERNET` permission is the privacy guarantee
 
