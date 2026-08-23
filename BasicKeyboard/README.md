@@ -28,3 +28,5 @@ A minimal **offline keyboard**: English & Russian, drawn on a plain Canvas, no i
 ## Requirements
 
 Enable under **Settings → Languages & input**, then select it as the active keyboard. `minSdk 26`.
+
+**Password key:** the 🔑 opens an installed supported manager (Proton Pass, Bitwarden, KeePassDX, 1Password, and more). The keyboard itself runs on Android 8+, but the popular managers (Proton Pass, Bitwarden) require a newer Android than 8 to install, so on very old devices there may be none to open and the shortcut won't be useful.
