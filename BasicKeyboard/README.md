@@ -15,7 +15,7 @@ A minimal **offline keyboard**: English & Russian, drawn on a plain Canvas, no i
 - **English + Russian** layouts (tap the 🌐 globe to switch), number row, two symbol pages, emoji panel
 - **Long-press** for accents and numbers; **multi-touch key rollover** so fast typing never drops a key
 - **Held backspace** accelerates and switches to whole-word deletes
-- **Clipboard strip** with history that **ignores sensitive clips** (passwords/OTPs flagged `EXTRA_IS_SENSITIVE`), plus a Proton Pass shortcut
+- **Clipboard strip** with history that **ignores sensitive clips** (passwords/OTPs flagged `EXTRA_IS_SENSITIVE`), plus a **password-manager shortcut**
 - Adjustable **row height**, **square-key** and **compact-grid** styles, a **vibration** toggle, and automatic dark/light theming
 
 ## Notable implementation
