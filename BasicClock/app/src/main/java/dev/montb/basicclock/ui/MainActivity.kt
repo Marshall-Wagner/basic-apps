@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -205,7 +206,12 @@ private fun ClockApp() {
                             )
                         }
                     } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        // Bottom padding so the last alarm can scroll clear of the FAB
+                        // (otherwise the + button covers the final row's on/off toggle).
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 88.dp)
+                        ) {
                             items(alarms, key = { it.id }) { alarm ->
                                 AlarmRow(
                                     alarm = alarm,
@@ -544,7 +550,10 @@ private fun WorldClockList(zones: List<String>, onRemove: (String) -> Unit) {
     LaunchedEffect(Unit) {
         while (true) { now = Instant.now(); delay(1000) }
     }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 88.dp)  // clear the FAB
+    ) {
         items(zones, key = { it }) { z ->
             WorldClockRow(zoneId = z, now = now, is24 = is24, onRemove = { onRemove(z) })
             HorizontalDivider()
