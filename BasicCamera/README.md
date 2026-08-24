@@ -24,6 +24,7 @@ A minimal **camera app** built on CameraX, photo, video, and HEIC, fully offline
 - `LifecycleCameraController` with `ResolutionSelector` / Camera2 interop
 - Honestly surfaces device/HAL limits (e.g. a hardware-capped zoom range) rather than faking capability
 - API-guarded capture paths across Android 10-15
+- HEIC stores HEVC-encoded stills (the same H.265 codec as x265 video, just a single intra frame), so a photo is typically about half the size of the equivalent JPEG at similar quality
 
 ## Requirements
 
