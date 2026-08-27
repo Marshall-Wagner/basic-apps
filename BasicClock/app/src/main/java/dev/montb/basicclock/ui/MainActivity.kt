@@ -342,6 +342,16 @@ private fun AlarmEditorDialog(initial: Alarm?, onDismiss: () -> Unit, onSave: (A
                         modifier = Modifier.padding(12.dp)
                     )
                 }
+                // Live "your local time" conversion when the alarm is set in another zone, so a
+                // foreign-zone alarm can't be mistaken for local time (matches BasicCalendar).
+                localAlarmHint(timeState.hour, timeState.minute, zoneId, days.toSet(), is24)?.let { hint ->
+                    Text(
+                        hint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 Text("Sound", style = MaterialTheme.typography.labelMedium)
                 Surface(
@@ -472,6 +482,26 @@ private fun ZonePickerRow(zoneId: String, onClick: () -> Unit) {
         )
     }
     HorizontalDivider()
+}
+
+/** When the alarm's zone differs from the phone's, the local time it will actually ring at,
+ *  e.g. "Rings 7:00 PM your time (Chicago), a day earlier". Uses the alarm's real next-ring
+ *  instant (so it is correct across repeat-days and DST). Null when the zones resolve alike. */
+private fun localAlarmHint(hour: Int, minute: Int, zoneId: String, days: Set<Int>, is24: Boolean): String? {
+    if (zoneId == Zones.device()) return null
+    val alarmZone = runCatching { ZoneId.of(zoneId) }.getOrNull() ?: return null
+    val instant = Alarm(hour = hour, minute = minute, zoneId = zoneId, days = days, enabled = true)
+        .nextTrigger() ?: return null
+    val here = instant.atZone(ZoneId.systemDefault()).toLocalDateTime()
+    val there = instant.atZone(alarmZone).toLocalDateTime()
+    if (here == there) return null   // same wall time (equal offsets): nothing to convert
+    val timeStr = here.format(DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a"))
+    val dayNote = when {
+        here.toLocalDate().isBefore(there.toLocalDate()) -> ", a day earlier"
+        here.toLocalDate().isAfter(there.toLocalDate()) -> ", a day later"
+        else -> ""
+    }
+    return "Rings $timeStr your time (${Zones.cityLabel(ZoneId.systemDefault().id)})$dayNote"
 }
 
 private fun daysSummary(days: Set<Int>): String {
