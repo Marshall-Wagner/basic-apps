@@ -44,6 +44,7 @@ class InCallActivity : ComponentActivity() {
                             }
                             CallManager.route(target)
                         },
+                        onEarpiece = { CallManager.route(CallAudioState.ROUTE_EARPIECE) },
                         onBluetooth = { CallManager.route(CallAudioState.ROUTE_BLUETOOTH) },
                         onDtmf = { digit -> CallManager.playDtmf(digit) },
                         onSendPin = {

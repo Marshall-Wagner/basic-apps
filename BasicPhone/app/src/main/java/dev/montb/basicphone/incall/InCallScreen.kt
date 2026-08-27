@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Dialpad
@@ -50,6 +51,7 @@ fun InCallScreen(
     state: CallUiState,
     onToggleMute: () -> Unit,
     onToggleSpeaker: () -> Unit,
+    onEarpiece: () -> Unit,
     onBluetooth: () -> Unit,
     onDtmf: (Char) -> Unit,
     onSendPin: () -> Unit,
@@ -68,7 +70,9 @@ fun InCallScreen(
     val ringing = state.callState == Call.STATE_RINGING
     val onSpeaker = state.route == CallAudioState.ROUTE_SPEAKER
     val onBt = state.route == CallAudioState.ROUTE_BLUETOOTH
+    val onEar = state.route == CallAudioState.ROUTE_EARPIECE
     val btSupported = (state.supportedRouteMask and CallAudioState.ROUTE_BLUETOOTH) != 0
+    val earSupported = (state.supportedRouteMask and CallAudioState.ROUTE_EARPIECE) != 0
 
     // In-call DTMF keypad visibility (for voicemail PINs / IVR menus).
     var showKeypad by remember { mutableStateOf(false) }
@@ -136,6 +140,7 @@ fun InCallScreen(
 
         // Audio controls (hidden while ringing, you mute/route after answering).
         if (!ringing) {
+            // Call controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -160,6 +165,20 @@ fun InCallScreen(
                     label = "Send PIN",
                     selected = false,
                     onClick = onSendPin
+                )
+            }
+            Spacer(Modifier.size(16.dp))
+            // Audio route: earpiece / speaker / Bluetooth (tap the one you want)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                ControlButton(
+                    icon = Icons.Filled.PhoneInTalk,
+                    label = "Earpiece",
+                    selected = onEar,
+                    enabled = earSupported,
+                    onClick = onEarpiece
                 )
                 ControlButton(
                     icon = Icons.AutoMirrored.Filled.VolumeUp,
