@@ -134,4 +134,32 @@ object Layouts {
         Key(KeyAction.Char("."), ".", 1f),
         Key(KeyAction.Enter, "⏎", modWeight)
     )
+
+    // A single number-pad key (a digit or a symbol). Like letterRow, the Char's own text
+    // is its label, so there's nothing extra to set.
+    private fun pad(s: String): Key = Key(KeyAction.Char(s))
+
+    /** Number pad for numeric and date/time fields: the ten digits plus the separators a
+     *  time or date needs (:, -, .), with backspace, enter, and an ABC key back to letters
+     *  in case a field was mis-typed as numeric. No letter keys, this is what shows when a
+     *  field only takes numbers. All rows are four keys wide so the grid stays square. */
+    fun numericPad(): Layout = Layout(
+        listOf(
+            listOf(pad("1"), pad("2"), pad("3"), Key(KeyAction.Backspace, "⌫")),
+            listOf(pad("4"), pad("5"), pad("6"), pad(":")),
+            listOf(pad("7"), pad("8"), pad("9"), pad("-")),
+            listOf(Key(KeyAction.LetterLayer, "ABC"), pad("0"), pad("."), Key(KeyAction.Enter, "⏎"))
+        )
+    )
+
+    /** Dial pad for phone-number fields: 1-9, *, 0, #, plus + (international) and a comma
+     *  pause, with backspace and enter. */
+    fun phonePad(): Layout = Layout(
+        listOf(
+            listOf(pad("1"), pad("2"), pad("3"), Key(KeyAction.Backspace, "⌫")),
+            listOf(pad("4"), pad("5"), pad("6"), pad("+")),
+            listOf(pad("7"), pad("8"), pad("9"), pad(",")),
+            listOf(pad("*"), pad("0"), pad("#"), Key(KeyAction.Enter, "⏎"))
+        )
+    )
 }

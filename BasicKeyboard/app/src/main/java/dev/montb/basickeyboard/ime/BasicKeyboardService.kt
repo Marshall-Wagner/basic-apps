@@ -19,12 +19,14 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private enum class Lang { ENGLISH, RUSSIAN }
     private enum class Mode { LETTERS, SYMBOLS, SYMBOLS2 }
+    private enum class NumPad { NONE, NUMERIC, PHONE }
 
     private var lang = Lang.ENGLISH
     private var mode = Mode.LETTERS
     private var shifted = false
     private var capsLock = false
     private var passwordField = false   // current field is a password/secure input
+    private var numPad = NumPad.NONE    // current field wants a number pad (numeric / phone)
 
     private lateinit var keyboardView: KeyboardView
     private lateinit var topStrip: TopStripView
@@ -197,6 +199,9 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         // Don't surface clipboard chips while a password field is focused, avoids
         // showing/leaking copied secrets in a login context.
         passwordField = info?.let { isPasswordField(it.inputType) } ?: false
+        // Fields that only take numbers (number / date-time / phone) get a number pad
+        // instead of the letter layout, so there's no character input to wade through.
+        numPad = info?.let { numPadFor(it.inputType) } ?: NumPad.NONE
         if (::keyboardView.isInitialized) {
             applyLayout()
             // A new field usually follows a fresh copy elsewhere (the copy -> focus field ->
@@ -223,6 +228,17 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** Which number pad (if any) a field wants, from its input class: a dial pad for phone
+     *  fields, a numeric pad for number and date/time fields (a numeric PIN included, which
+     *  gives a secure keypad), and none for ordinary text. */
+    private fun numPadFor(inputType: Int): NumPad =
+        when (inputType and android.text.InputType.TYPE_MASK_CLASS) {
+            android.text.InputType.TYPE_CLASS_PHONE -> NumPad.PHONE
+            android.text.InputType.TYPE_CLASS_NUMBER,
+            android.text.InputType.TYPE_CLASS_DATETIME -> NumPad.NUMERIC
+            else -> NumPad.NONE
+        }
+
     // --- KeyboardView.Listener ---
 
     override fun onKey(action: KeyAction) {
@@ -238,7 +254,7 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
             KeyAction.Shift -> toggleShift()
             KeyAction.SymbolsLayer -> nextSymbolPage()
             KeyAction.NumbersToggle -> toggleNumbers()
-            KeyAction.LetterLayer -> { mode = Mode.LETTERS; applyLayout() }
+            KeyAction.LetterLayer -> { numPad = NumPad.NONE; mode = Mode.LETTERS; applyLayout() }
             KeyAction.Language -> cycleLanguage()
             KeyAction.Emoji -> showEmoji()
             KeyAction.Clipboard -> showClipboard()
@@ -353,6 +369,13 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun applyLayout() {
+        // A numeric / phone field gets a dedicated number pad, no letters to wade through.
+        if (numPad != NumPad.NONE) {
+            keyboardView.layout =
+                if (numPad == NumPad.PHONE) Layouts.phonePad() else Layouts.numericPad()
+            if (::root.isInitialized) setBody(keyboardView)
+            return
+        }
         // Narrow (1x) vs. wide (1.5x) modifier keys, per the user's setup-screen toggle.
         val mw = if (KeyboardPrefs.narrowModifiers(this)) Layouts.NARROW_MOD else Layouts.WIDE_MOD
         keyboardView.layout = when (mode) {

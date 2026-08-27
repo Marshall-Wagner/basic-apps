@@ -13,6 +13,7 @@ A minimal **offline keyboard**: English & Russian, drawn on a plain Canvas, no i
 ## Features
 
 - **English + Russian** layouts (tap the 🌐 globe to switch), number row, two symbol pages, emoji panel
+- **Number pad** shown automatically for numeric, date/time, and phone fields: just the digits plus the separators those need (`: - .` for times/dates, `+ * #` on the dial pad), with an ABC key back to letters
 - **Long-press** for accents and numbers, plus multi-touch key rollover so fast typing never drops a key
 - **Held backspace** accelerates and switches to whole-word deletes
 - **Clipboard strip** with history that ignores sensitive clips (passwords/OTPs flagged `EXTRA_IS_SENSITIVE`), plus a password-manager shortcut
