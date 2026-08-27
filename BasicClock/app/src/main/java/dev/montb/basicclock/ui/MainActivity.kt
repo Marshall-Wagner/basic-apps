@@ -275,6 +275,8 @@ private fun ClockApp() {
 
 @Composable
 private fun AlarmRow(alarm: Alarm, onToggle: (Boolean) -> Unit, onClick: () -> Unit, onDelete: () -> Unit) {
+    val context = LocalContext.current
+    val is24 = remember { DateFormat.is24HourFormat(context) }
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -287,6 +289,14 @@ private fun AlarmRow(alarm: Alarm, onToggle: (Boolean) -> Unit, onClick: () -> U
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
+            localAlarmHint(alarm.hour, alarm.minute, alarm.zoneId, alarm.days, is24)?.let { hint ->
+                Text(
+                    hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+            }
             val sub = buildString {
                 append(daysSummary(alarm.days))
                 if (alarm.label.isNotBlank()) append("  ·  ${alarm.label}")
