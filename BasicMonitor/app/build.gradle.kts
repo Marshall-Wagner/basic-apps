@@ -56,4 +56,7 @@ dependencies {
 
     implementation(libs.androidx.profileinstaller)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Local JVM unit tests (clock-unit normalization, SoC-code matching). Run: ./gradlew test
+    testImplementation("junit:junit:4.13.2")
 }

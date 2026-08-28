@@ -80,8 +80,9 @@ object SystemStats {
         "/sys/kernel/gpu/gpu_max_clock"
     )
 
-    /** Normalize a raw clock value (Hz / kHz / MHz) to MHz by magnitude. */
-    private fun toMhz(raw: Long): Int = when {
+    /** Normalize a raw clock value (Hz / kHz / MHz) to MHz by magnitude.
+     *  internal (not private) so unit tests can exercise the heuristic directly. */
+    internal fun toMhz(raw: Long): Int = when {
         raw > 1_000_000 -> (raw / 1_000_000).toInt()   // Hz
         raw > 10_000 -> (raw / 1000).toInt()           // kHz
         else -> raw.toInt()                            // already MHz
@@ -164,7 +165,8 @@ object SystemStats {
             .firstOrNull() ?: Build.HARDWARE.ifBlank { "Unknown CPU" }
     }
 
-    private fun matchSoc(raw: String): String? =
+    // internal (not private) so unit tests can exercise the SoC-code matching directly.
+    internal fun matchSoc(raw: String): String? =
         SOC_NAMES.entries.firstOrNull { raw.contains(it.key, ignoreCase = true) }
             ?.let { "${it.value} (${it.key})" }
 

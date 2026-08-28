@@ -71,4 +71,9 @@ dependencies {
     implementation(libs.androidx.profileinstaller)
 
     implementation(libs.kotlinx.coroutines.android)
+
+    // Local JVM unit tests (backup NDJSON parsing). org.json ships a real impl for the
+    // JVM (Android's android.jar stubs it out in unit tests). Run: ./gradlew test
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

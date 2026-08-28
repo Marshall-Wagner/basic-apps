@@ -117,12 +117,14 @@ object SmsImporter {
         return out
     }
 
-    private fun looksLikeMessage(line: String): Boolean =
+    // internal (not private) so unit tests can exercise the NDJSON parsing directly.
+    internal fun looksLikeMessage(line: String): Boolean =
         line.startsWith("{") && (line.contains("\"date\"") || line.contains("\"body\"") ||
             line.contains("\"msg_box\"") || line.contains("\"__parts__\""))
 
-    /** Parse one NDJSON line (SMS or MMS) into a MessageEntity, or null if not usable. */
-    private fun parseLine(line: String, attachments: Map<String, File>): MessageEntity? {
+    /** Parse one NDJSON line (SMS or MMS) into a MessageEntity, or null if not usable.
+     *  internal (not private) so unit tests can drive it with sample lines. */
+    internal fun parseLine(line: String, attachments: Map<String, File>): MessageEntity? {
         val o = JSONObject(line)
         val parts = o.optJSONArray("__parts__") ?: o.optJSONArray("parts")
         return if (parts != null || o.has("msg_box")) {

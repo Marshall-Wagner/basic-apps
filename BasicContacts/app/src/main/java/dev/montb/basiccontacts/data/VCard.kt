@@ -38,12 +38,15 @@ object VCard {
         return ImportResult(imported, failed)
     }
 
+    // The parse/escape helpers below are internal (not private) so unit tests in src/test
+    // can exercise them directly, the public import/export entry points need a Context/Uri.
+
     /** vCard folds long lines by starting a continuation with a space/tab. Rejoin them. */
-    private fun unfold(text: String): String =
+    internal fun unfold(text: String): String =
         text.replace("\r\n", "\n").replace("\r", "\n")
             .replace(Regex("\n[ \t]"), "")
 
-    private fun splitCards(text: String): List<String> {
+    internal fun splitCards(text: String): List<String> {
         val cards = ArrayList<String>()
         val current = StringBuilder()
         var inside = false
@@ -107,7 +110,7 @@ object VCard {
     }
 
     /** Pull a friendly label out of the TYPE= parameter, falling back to [default]. */
-    private fun labelFrom(key: String, default: String): String {
+    internal fun labelFrom(key: String, default: String): String {
         val type = Regex("TYPE=([A-Za-z]+)", RegexOption.IGNORE_CASE)
             .find(key)?.groupValues?.get(1)
         return when (type?.uppercase()) {
@@ -120,7 +123,7 @@ object VCard {
     }
 
     /** Handle the common QUOTED-PRINTABLE / escaped-comma cases minimally. */
-    private fun decode(value: String): String =
+    internal fun decode(value: String): String =
         value.replace("\\n", "\n").replace("\\,", ",").replace("\\;", ";").trim()
 
     // --- export ---
@@ -162,14 +165,14 @@ object VCard {
         return written
     }
 
-    private fun typeParam(label: String): String = when (label.uppercase()) {
+    internal fun typeParam(label: String): String = when (label.uppercase()) {
         "MOBILE" -> "CELL"
         "HOME" -> "HOME"
         "WORK" -> "WORK"
         else -> "VOICE"
     }
 
-    private fun escape(value: String): String =
+    internal fun escape(value: String): String =
         value.replace("\\", "\\\\").replace(";", "\\;")
             .replace(",", "\\,").replace("\n", "\\n")
 }
