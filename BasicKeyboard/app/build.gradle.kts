@@ -53,4 +53,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    // Local JVM unit tests (pure keyboard-layout data). Run: ./gradlew test
+    testImplementation("junit:junit:4.13.2")
 }

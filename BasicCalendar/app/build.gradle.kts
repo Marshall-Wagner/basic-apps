@@ -57,4 +57,7 @@ dependencies {
 
     implementation(libs.androidx.profileinstaller)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Local JVM unit tests (pure java.time recurrence logic). Run: ./gradlew test
+    testImplementation("junit:junit:4.13.2")
 }
