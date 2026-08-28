@@ -1,5 +1,7 @@
 # Basic Apps: a minimal, offline, privacy-first Android suite
 
+[![Unit tests](https://github.com/Marshall-Wagner/basic-apps/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/Marshall-Wagner/basic-apps/actions/workflows/unit-tests.yml)
+
 A set of hand-built replacements for the phone's stock apps, designed around one rule:
 
 > **None of these apps hold the `INTERNET` permission.**
