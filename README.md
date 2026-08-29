@@ -11,6 +11,16 @@ Each app is a small, dependency-light, fully-offline tool that does one job well
 
 ---
 
+## Why I built these
+
+Mostly to fix real problems on my own phones:
+
+- On the ROG Phone 6 (Chinese ROM), the stock phone, SMS, and camera apps were dated, heavier than I wanted, and buggy. The camera in particular would often refuse to open with an "another app is using the camera" error, leaving me with no working camera at all. Focused, offline replacements I fully control fixed the daily friction and removed background behavior I didn't need.
+- Keeping every app fully offline was the point: once each one does its job without the network, "nothing leaves the device" stops being a promise and becomes something the manifest enforces.
+- BasicSms sticks to plain SMS/MMS rather than RCS. My ROG Phone 5 (global ROM) shipped near-stock, AOSP-based apps, and at some point its messaging was quietly migrated to Google Messages, and RCS with it, without my noticing at first - exactly the kind of silent change to a core app I wanted to be rid of. RCS also can't be done offline: it routes through carrier or Google (Jibe) servers, so it can't live in a suite whose rule is no INTERNET permission. (On encryption: Google Messages does end-to-end encrypt its own RCS chats with the Signal Protocol; the still-maturing part is cross-platform, standardized RCS E2EE. Either way, RCS needs the network, which these apps don't use.)
+
+---
+
 ## The apps
 
 | App | Role | What it does |
