@@ -16,10 +16,11 @@ class CalendarEventNextTriggerTest {
 
     private fun event(
         year: Int, month: Int, day: Int, hour: Int, minute: Int,
-        zoneId: String = "UTC", repeat: Repeat = Repeat.NONE, enabled: Boolean = true
+        zoneId: String = "UTC", repeat: Repeat = Repeat.NONE, enabled: Boolean = true,
+        leadMinutes: Int = 0
     ) = CalendarEvent(
         year = year, month = month, day = day, hour = hour, minute = minute,
-        zoneId = zoneId, repeat = repeat, enabled = enabled
+        zoneId = zoneId, repeat = repeat, enabled = enabled, leadMinutes = leadMinutes
     )
 
     @Test
@@ -88,6 +89,24 @@ class CalendarEventNextTriggerTest {
         assertEquals(
             at("2026-03-08T07:30:00Z"),
             event(2026, 3, 8, 2, 30, zoneId = "America/New_York").nextTrigger(at("2026-03-01T00:00:00Z"))
+        )
+    }
+
+    @Test
+    fun leadTimeFiresTheReminderBeforeTheEvent() {
+        // A 30-minute lead on a 09:00 event fires the reminder at 08:30.
+        assertEquals(
+            at("2026-06-15T08:30:00Z"),
+            event(2026, 6, 15, 9, 0, leadMinutes = 30).nextTrigger(at("2026-06-01T00:00:00Z"))
+        )
+    }
+
+    @Test
+    fun leadTimeAppliesToRepeatsToo() {
+        // A 60-minute lead on a monthly-on-the-31st skips February to March 31, firing at 09:00.
+        assertEquals(
+            at("2026-03-31T09:00:00Z"),
+            event(2026, 1, 31, 10, 0, repeat = Repeat.MONTHLY, leadMinutes = 60).nextTrigger(at("2026-02-01T00:00:00Z"))
         )
     }
 }

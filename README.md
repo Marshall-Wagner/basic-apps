@@ -31,7 +31,7 @@ Mostly to fix real problems on my own phones:
 | **[BasicCamera](BasicCamera/)** | Camera | Photo & video (CameraX), HEIC capture, aspect-ratio & resolution control, zoom presets, volume-button shutter, EXIF stripping |
 | **[BasicContacts](BasicContacts/)** | Contacts | List / detail / edit over `ContactsContract`, vCard import & export |
 | **[BasicClock](BasicClock/)** | Clock, alarms & timers | Time-zone-anchored alarms (ring at the correct local moment, right across DST & travel), ringtone picker, full-screen ring with snooze, world clock with live times + country names, plus a stopwatch and a background countdown timer |
-| **[BasicCalendar](BasicCalendar/)** | Calendar alarms | Set an alarm for a specific future date and time in any city's time zone; month grid + event list, none / weekly / monthly / yearly repeats, full-screen ring with snooze, survives reboot & zone changes |
+| **[BasicCalendar](BasicCalendar/)** | Calendar alarms | Set an alarm for a specific future date and time in any city's time zone; month grid + event list, none / weekly / monthly / yearly repeats, reminder lead time (30 / 60 min before), full-screen ring with snooze, survives reboot & zone changes |
 | **[BasicMonitor](BasicMonitor/)** | System monitor | Live CPU model & clock, GPU model, RAM, swap, storage, battery, all with zero permissions from public APIs / world-readable sysfs |
 
 ---

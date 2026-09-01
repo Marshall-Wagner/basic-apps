@@ -56,6 +56,7 @@ object EventStore {
         put("zoneId", e.zoneId)
         put("label", e.label)
         put("repeat", e.repeat.name)
+        put("leadMinutes", e.leadMinutes)
         put("enabled", e.enabled)
         if (e.soundUri != null) put("soundUri", e.soundUri)
     }
@@ -71,6 +72,7 @@ object EventStore {
         label = o.optString("label", ""),
         repeat = runCatching { Repeat.valueOf(o.optString("repeat", "NONE")) }
             .getOrDefault(Repeat.NONE),
+        leadMinutes = o.optInt("leadMinutes", 0),
         enabled = o.optBoolean("enabled", true),
         soundUri = o.optString("soundUri", "").ifBlank { null }
     )

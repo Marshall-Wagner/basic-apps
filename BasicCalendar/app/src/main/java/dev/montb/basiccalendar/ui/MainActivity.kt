@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -367,7 +368,10 @@ private fun EventList(
                 )
             }
         } else {
-            LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentPadding = PaddingValues(bottom = 88.dp)
+            ) {
                 items(shown, key = { it.id }) { ev ->
                     EventRow(ev, onToggle = { onToggle(ev, it) }, onClick = { onClick(ev) }, onDelete = { onDelete(ev) })
                     HorizontalDivider()
@@ -449,6 +453,13 @@ private fun localTimeHint(date: LocalDate, hour: Int, minute: Int, zoneId: Strin
 
 /* ----------------------------------- editor ----------------------------------- */
 
+/** Label for the reminder lead-time chips in the editor. */
+private fun leadSummary(minutes: Int): String = when (minutes) {
+    0 -> "At event time"
+    60 -> "1 hour before"
+    else -> "$minutes min before"
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun EventEditorDialog(
@@ -468,6 +479,7 @@ private fun EventEditorDialog(
     var date by remember { mutableStateOf(startDate) }
     var zoneId by remember { mutableStateOf(initial?.zoneId ?: Zones.device()) }
     var repeat by remember { mutableStateOf(initial?.repeat ?: Repeat.NONE) }
+    var leadMinutes by remember { mutableStateOf(initial?.leadMinutes ?: 0) }
     var label by remember { mutableStateOf(initial?.label ?: "") }
     var soundUri by remember { mutableStateOf(initial?.soundUri) }
     var pickingZone by remember { mutableStateOf(false) }
@@ -521,6 +533,18 @@ private fun EventEditorDialog(
                 }
 
                 Spacer(Modifier.height(8.dp))
+                Text("Remind", style = MaterialTheme.typography.labelMedium)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0, 30, 60).forEach { m ->
+                        FilterChip(
+                            selected = leadMinutes == m,
+                            onClick = { leadMinutes = m },
+                            label = { Text(leadSummary(m)) }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
                 Text("Sound", style = MaterialTheme.typography.labelMedium)
                 PickerRow(ringtoneTitle(context, soundUri)) {
                     ringtoneLauncher.launch(
@@ -556,6 +580,7 @@ private fun EventEditorDialog(
                             zoneId = zoneId,
                             label = label.trim(),
                             repeat = repeat,
+                            leadMinutes = leadMinutes,
                             enabled = true,
                             soundUri = soundUri
                         )

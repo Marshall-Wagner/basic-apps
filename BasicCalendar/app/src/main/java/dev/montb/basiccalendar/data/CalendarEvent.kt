@@ -1,5 +1,6 @@
 package dev.montb.basiccalendar.data
 
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -26,6 +27,8 @@ data class CalendarEvent(
     val zoneId: String,
     val label: String = "",
     val repeat: Repeat = Repeat.NONE,
+    /** Minutes before the event to fire the reminder; 0 = at the event's start time. */
+    val leadMinutes: Int = 0,
     val enabled: Boolean = true,
     /** Ringtone URI string; null = the system default alarm sound. */
     val soundUri: String? = null
@@ -48,17 +51,20 @@ data class CalendarEvent(
         val time = runCatching { LocalTime.of(hour, minute) }.getOrNull() ?: return null
         val anchor = anchorDate ?: return null
 
-        fun instantOf(date: LocalDate): Instant = date.atTime(time).atZone(zone).toInstant()
+        val lead = Duration.ofMinutes(leadMinutes.toLong())
+        // The reminder fires [leadMinutes] before the event's wall-clock moment (0 = at start).
+        fun triggerOf(date: LocalDate): Instant =
+            date.atTime(time).atZone(zone).toInstant().minus(lead)
 
         return when (repeat) {
-            Repeat.NONE -> instantOf(anchor).takeIf { it.isAfter(now) }
+            Repeat.NONE -> triggerOf(anchor).takeIf { it.isAfter(now) }
 
             Repeat.WEEKLY -> {
                 var date = anchor
                 var guard = 0
                 // Same weekday & wall-time; step whole weeks until we pass now.
-                while (!instantOf(date).isAfter(now) && guard++ < 6000) date = date.plusWeeks(1)
-                instantOf(date).takeIf { it.isAfter(now) }
+                while (!triggerOf(date).isAfter(now) && guard++ < 6000) date = date.plusWeeks(1)
+                triggerOf(date).takeIf { it.isAfter(now) }
             }
 
             Repeat.MONTHLY -> {
@@ -66,7 +72,7 @@ data class CalendarEvent(
                 var guard = 0
                 while (guard++ < 1200) {
                     if (day <= ym.lengthOfMonth()) {
-                        val inst = instantOf(ym.atDay(day))
+                        val inst = triggerOf(ym.atDay(day))
                         if (inst.isAfter(now)) return inst
                     }
                     ym = ym.plusMonths(1)
@@ -80,7 +86,7 @@ data class CalendarEvent(
                 while (guard++ < 400) {
                     val d = runCatching { LocalDate.of(y, month, day) }.getOrNull()
                     if (d != null) {
-                        val inst = instantOf(d)
+                        val inst = triggerOf(d)
                         if (inst.isAfter(now)) return inst
                     }
                     y++

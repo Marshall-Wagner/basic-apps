@@ -17,6 +17,7 @@ A minimal **date and time-zone alarm calendar**: set an alarm for a specific fut
 - **Month grid + event list**: a tappable month calendar with today ringed, the selected day highlighted, and a dot on days that have an alarm; the list below shows that day's events, or all upcoming events sorted by which fires next
 - **Date + time in a chosen time zone**: an event is anchored to a real calendar date and wall-clock time *in* a picked region, so it rings at the correct absolute moment across DST and even if the phone travels to another zone
 - **Repeats**: once, weekly, monthly, or yearly; a one-off switches itself off after ringing, repeats re-arm their next occurrence
+- **Reminder lead time**: ring at the event, or 30 or 60 minutes before it, for a heads-up ahead of time (repeats keep the same lead each occurrence)
 - **Full-screen ring** over the lock screen with Snooze and Dismiss, plus a per-event ringtone picker
 - **Survives reboot, clock, and time-zone changes**: alarms are re-armed on `BOOT_COMPLETED`, `TIME_SET`, and `TIMEZONE_CHANGED`, and re-checked each time the app opens
 
