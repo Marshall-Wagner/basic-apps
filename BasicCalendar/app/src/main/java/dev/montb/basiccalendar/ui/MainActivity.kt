@@ -419,6 +419,10 @@ private fun EventRow(
             }
             val sub = buildString {
                 append(repeatSummary(event.repeat))
+                when {
+                    !event.notify -> append("  ·  No reminder")
+                    event.leadMinutes > 0 -> append("  ·  ${leadSummary(event.leadMinutes)}")
+                }
                 if (event.label.isNotBlank()) append("  ·  ${event.label}")
             }
             Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -480,6 +484,7 @@ private fun EventEditorDialog(
     var zoneId by remember { mutableStateOf(initial?.zoneId ?: Zones.device()) }
     var repeat by remember { mutableStateOf(initial?.repeat ?: Repeat.NONE) }
     var leadMinutes by remember { mutableStateOf(initial?.leadMinutes ?: 0) }
+    var notify by remember { mutableStateOf(initial?.notify ?: true) }
     var label by remember { mutableStateOf(initial?.label ?: "") }
     var soundUri by remember { mutableStateOf(initial?.soundUri) }
     var pickingZone by remember { mutableStateOf(false) }
@@ -535,10 +540,16 @@ private fun EventEditorDialog(
                 Spacer(Modifier.height(8.dp))
                 Text("Remind", style = MaterialTheme.typography.labelMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // "None" makes it a silent calendar entry (no alarm / notification).
+                    FilterChip(
+                        selected = !notify,
+                        onClick = { notify = false },
+                        label = { Text("None") }
+                    )
                     listOf(0, 30, 60).forEach { m ->
                         FilterChip(
-                            selected = leadMinutes == m,
-                            onClick = { leadMinutes = m },
+                            selected = notify && leadMinutes == m,
+                            onClick = { notify = true; leadMinutes = m },
                             label = { Text(leadSummary(m)) }
                         )
                     }
@@ -581,6 +592,7 @@ private fun EventEditorDialog(
                             label = label.trim(),
                             repeat = repeat,
                             leadMinutes = leadMinutes,
+                            notify = notify,
                             enabled = true,
                             soundUri = soundUri
                         )

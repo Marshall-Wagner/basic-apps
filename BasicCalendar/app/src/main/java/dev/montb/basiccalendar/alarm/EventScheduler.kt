@@ -28,6 +28,8 @@ object EventScheduler {
 
     fun schedule(context: Context, event: CalendarEvent) {
         val am = context.getSystemService(AlarmManager::class.java) ?: return
+        // A silent event (notify = false) shows on the calendar but arms no alarm / notification.
+        if (!event.notify) { cancel(context, event); return }
         val trigger = event.nextTrigger() ?: run { cancel(context, event); return }
         // Tapping the status-bar alarm icon opens the app.
         val show = PendingIntent.getActivity(

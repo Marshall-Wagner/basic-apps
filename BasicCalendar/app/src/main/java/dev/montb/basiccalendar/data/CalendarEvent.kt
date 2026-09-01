@@ -29,6 +29,8 @@ data class CalendarEvent(
     val repeat: Repeat = Repeat.NONE,
     /** Minutes before the event to fire the reminder; 0 = at the event's start time. */
     val leadMinutes: Int = 0,
+    /** When false, the event shows on the calendar but arms no alarm / notification. */
+    val notify: Boolean = true,
     val enabled: Boolean = true,
     /** Ringtone URI string; null = the system default alarm sound. */
     val soundUri: String? = null

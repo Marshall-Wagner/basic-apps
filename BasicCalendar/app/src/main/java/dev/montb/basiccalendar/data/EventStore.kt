@@ -57,6 +57,7 @@ object EventStore {
         put("label", e.label)
         put("repeat", e.repeat.name)
         put("leadMinutes", e.leadMinutes)
+        put("notify", e.notify)
         put("enabled", e.enabled)
         if (e.soundUri != null) put("soundUri", e.soundUri)
     }
@@ -73,6 +74,7 @@ object EventStore {
         repeat = runCatching { Repeat.valueOf(o.optString("repeat", "NONE")) }
             .getOrDefault(Repeat.NONE),
         leadMinutes = o.optInt("leadMinutes", 0),
+        notify = o.optBoolean("notify", true),
         enabled = o.optBoolean("enabled", true),
         soundUri = o.optString("soundUri", "").ifBlank { null }
     )
