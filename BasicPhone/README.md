@@ -19,7 +19,8 @@ A minimal **default dialer / phone app**: call log, in-call UI, and spam screeni
 - **STIR/SHAKEN spam screening** (`CallScreeningService`): silence or reject calls that fail carrier attestation; opt-in, all on-device, no number lists
 - **Voicemail**: per-SIM saved number + PIN with DTMF auto-send, sidestepping the phone's broken voicemail setting
 - **Multi-SIM**, VoLTE indicator, full-screen incoming-call notification (`CallStyle`), automatic missed-call-count clearing
-- **Offline number lookup**: long-press a call to search it (Google or DuckDuckGo) or copy the number
+- **Offline number lookup**: long-press a call to add it as a contact, search it (Google or DuckDuckGo), or copy the number
+- **Call blocking**: long-press a call to block the number via the system block list (silences its calls and texts), with a "Blocked numbers" screen to review and unblock
 
 ## Notable implementation
 

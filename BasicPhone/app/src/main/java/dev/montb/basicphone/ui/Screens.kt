@@ -1,11 +1,16 @@
 package dev.montb.basicphone.ui
 
+import android.content.Intent
 import android.provider.CallLog
+import android.provider.ContactsContract
 import android.text.format.DateFormat
+import android.widget.Toast
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,6 +81,7 @@ import dev.montb.basicphone.util.Clip
 import dev.montb.basicphone.util.Contacts
 import dev.montb.basicphone.util.MissedCalls
 import dev.montb.basicphone.util.Prefs
+import dev.montb.basicphone.util.Blocking
 import dev.montb.basicphone.util.NumberLookup
 import dev.montb.basicphone.util.Sims
 import dev.montb.basicphone.util.Voicemail
@@ -132,6 +138,8 @@ fun HomeScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var screeningDialogOpen by remember { mutableStateOf(false) }
     var searchEngineDialogOpen by remember { mutableStateOf(false) }
+    var blockedDialogOpen by remember { mutableStateOf(false) }
+    var blockTarget by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -158,6 +166,10 @@ fun HomeScreen(
                             text = { Text("Number lookup search…") },
                             onClick = { menuOpen = false; searchEngineDialogOpen = true }
                         )
+                        DropdownMenuItem(
+                            text = { Text("Blocked numbers…") },
+                            onClick = { menuOpen = false; blockedDialogOpen = true }
+                        )
                         if (!isDefault) {
                             DropdownMenuItem(
                                 text = { Text("Set as default phone app") },
@@ -180,6 +192,22 @@ fun HomeScreen(
             OngoingCallBanner()
             if (screeningDialogOpen) SpamScreeningDialog(onDismiss = { screeningDialogOpen = false })
             if (searchEngineDialogOpen) SearchEngineDialog(onDismiss = { searchEngineDialogOpen = false })
+            if (blockedDialogOpen) BlockedNumbersDialog(onDismiss = { blockedDialogOpen = false })
+            blockTarget?.let { number ->
+                BlockConfirmDialog(
+                    number = number,
+                    onConfirm = {
+                        val ok = Blocking.block(context, number)
+                        Toast.makeText(
+                            context,
+                            if (ok) "Blocked $number" else "Couldn't block this number",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        blockTarget = null
+                    },
+                    onDismiss = { blockTarget = null }
+                )
+            }
 
             val refresh = calls.loadState.refresh
             when {
@@ -208,7 +236,18 @@ fun HomeScreen(
                                 entry, display, carrier,
                                 onClick = { onCallNumber(entry.number, display) },
                                 onLookup = { NumberLookup.lookup(ctx, entry.number) },
-                                onCopy = { Clip.copy(ctx, "Phone number", entry.number) }
+                                onCopy = { Clip.copy(ctx, "Phone number", entry.number) },
+                                onAddContact = {
+                                    runCatching {
+                                        ctx.startActivity(
+                                            Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
+                                                type = ContactsContract.Contacts.CONTENT_ITEM_TYPE
+                                                putExtra(ContactsContract.Intents.Insert.PHONE, entry.number)
+                                            }
+                                        )
+                                    }
+                                },
+                                onBlock = { blockTarget = entry.number }
                             )
                         }
                     }
@@ -262,7 +301,9 @@ private fun CallRow(
     carrierLabel: String?,
     onClick: () -> Unit,
     onLookup: () -> Unit,
-    onCopy: () -> Unit
+    onCopy: () -> Unit,
+    onAddContact: () -> Unit,
+    onBlock: () -> Unit
 ) {
     val (icon, tint) = typeIcon(entry.type)
     var menuOpen by remember { mutableStateOf(false) }
@@ -304,6 +345,10 @@ private fun CallRow(
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             if (entry.number.isNotBlank()) {
                 DropdownMenuItem(
+                    text = { Text("Add contact") },
+                    onClick = { menuOpen = false; onAddContact() }
+                )
+                DropdownMenuItem(
                     text = { Text("Copy number") },
                     onClick = { menuOpen = false; onCopy() }
                 )
@@ -312,6 +357,12 @@ private fun CallRow(
                 text = { Text("Look up number online") },
                 onClick = { menuOpen = false; onLookup() }
             )
+            if (entry.number.isNotBlank()) {
+                DropdownMenuItem(
+                    text = { Text("Block number") },
+                    onClick = { menuOpen = false; onBlock() }
+                )
+            }
         }
     }
 }
@@ -657,6 +708,58 @@ private fun ErrorState(modifier: Modifier, onRetry: () -> Unit) {
         Text("Call log permission is needed to show your history.")
         TextButton(onClick = onRetry) { Text("Grant / Retry") }
     }
+}
+
+/** Confirm before adding a number to the system block list. */
+@Composable
+private fun BlockConfirmDialog(number: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Block number?") },
+        text = {
+            Text(
+                "Block $number? You won't get calls or texts from it. " +
+                    "You can unblock it later from \"Blocked numbers\" in the menu."
+            )
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Block") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+/** Lists the system-blocked numbers with a per-row Unblock action. */
+@Composable
+private fun BlockedNumbersDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    var entries by remember { mutableStateOf(Blocking.list(context)) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Blocked numbers") },
+        text = {
+            if (entries.isEmpty()) {
+                Text("No blocked numbers. Long-press a call and choose \"Block number\" to add one.")
+            } else {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    entries.forEach { e ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                e.number.ifBlank { "Unknown" },
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            TextButton(onClick = {
+                                if (Blocking.unblock(context, e.number)) entries = Blocking.list(context)
+                            }) { Text("Unblock") }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable
