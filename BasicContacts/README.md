@@ -18,6 +18,7 @@ A minimal **contacts manager** over `ContactsContract`, with vCard import/export
 - Quick actions from a contact: call, text, email
 - **vCard (`.vcf`) import & export** for portable, offline backups
 - Add / edit / delete against the system contacts provider
+- **Add-contact hand-off**: opens straight into a prefilled new-contact editor when another app sends an "add contact" intent with a number (e.g. BasicSms' "+" or the dialer's "add contact")
 
 ## Notable implementation
 

@@ -1,7 +1,10 @@
 package dev.montb.basiccontacts.ui
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.provider.ContactsContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,6 +45,7 @@ import dev.montb.basiccontacts.data.ContactSummary
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val prefillPhone = insertPhoneFrom(intent)
         setContent {
             BasicContactsTheme {
                 Surface(
@@ -49,22 +53,40 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val vm: ContactsViewModel = viewModel()
-                    AppRoot(vm)
+                    AppRoot(vm, prefillPhone)
                 }
             }
         }
     }
+
+    // A fresh "add contact" hand-off can arrive while we're already open (singleTop);
+    // re-run onCreate so the prefilled editor comes up.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        recreate()
+    }
+}
+
+/** The phone number from an ACTION_INSERT / ACTION_INSERT_OR_EDIT contact intent, else null. */
+private fun insertPhoneFrom(intent: Intent?): String? {
+    if (intent?.action != Intent.ACTION_INSERT && intent?.action != Intent.ACTION_INSERT_OR_EDIT) return null
+    return intent.getStringExtra(ContactsContract.Intents.Insert.PHONE)?.takeIf { it.isNotBlank() }
 }
 
 private sealed interface Nav {
     data object List : Nav
     data class Detail(val contact: ContactSummary) : Nav
-    data class Edit(val contactId: Long?) : Nav   // null = new contact
+    data class Edit(val contactId: Long?, val prefillPhone: String? = null) : Nav  // null id = new
 }
 
 @Composable
-private fun AppRoot(vm: ContactsViewModel) {
+private fun AppRoot(vm: ContactsViewModel, initialPrefillPhone: String? = null) {
     val context = LocalContext.current
+    val activity = context as? Activity
+    // Launched from another app's "add contact" (BasicSms / dialer): open straight into a
+    // prefilled new-contact editor, and finish back to the caller when done.
+    val startedForInsert = initialPrefillPhone != null
 
     fun hasContactsPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) ==
@@ -109,8 +131,12 @@ private fun AppRoot(vm: ContactsViewModel) {
         ActivityResultContracts.CreateDocument("text/x-vcard")
     ) { uri -> if (uri != null) vm.exportVcf(uri) }
 
-    var nav: Nav by remember { mutableStateOf<Nav>(Nav.List) }
-    BackHandler(enabled = nav != Nav.List) { nav = Nav.List }
+    var nav: Nav by remember {
+        mutableStateOf<Nav>(if (startedForInsert) Nav.Edit(null, initialPrefillPhone) else Nav.List)
+    }
+    BackHandler(enabled = nav != Nav.List) {
+        if (startedForInsert) activity?.finish() else nav = Nav.List
+    }
 
     when (val current = nav) {
         is Nav.List -> ContactListScreen(
@@ -127,9 +153,9 @@ private fun AppRoot(vm: ContactsViewModel) {
             onDeleted = { nav = Nav.List }
         )
         is Nav.Edit -> EditContactScreen(
-            vm, current.contactId,
-            onDone = { nav = Nav.List },
-            onCancel = { nav = Nav.List }
+            vm, current.contactId, current.prefillPhone,
+            onDone = { if (startedForInsert) activity?.finish() else nav = Nav.List },
+            onCancel = { if (startedForInsert) activity?.finish() else nav = Nav.List }
         )
     }
 

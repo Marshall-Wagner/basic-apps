@@ -63,6 +63,7 @@ import kotlinx.coroutines.withContext
 fun EditContactScreen(
     vm: ContactsViewModel,
     contactId: Long?,
+    prefillPhone: String? = null,
     onDone: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -71,7 +72,12 @@ fun EditContactScreen(
 
     // Load existing contact (edit) or start blank (add).
     val loaded by produceState<EditableContact?>(initialValue = null, key1 = contactId) {
-        value = if (contactId == null) EditableContact() else vm.editable(contactId)
+        value = if (contactId == null) {
+            // New contact: prefill the number when opened via an "add contact" intent.
+            val phone = prefillPhone?.takeIf { it.isNotBlank() }
+            if (phone != null) EditableContact(phones = listOf(LabeledValue(phone, EditableContact.PHONE_MOBILE)))
+            else EditableContact()
+        } else vm.editable(contactId)
     }
     val initial = loaded ?: return  // brief spinner-free wait; recomposes when ready
 

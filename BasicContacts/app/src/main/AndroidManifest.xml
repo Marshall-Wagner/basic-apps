@@ -48,6 +48,16 @@
                 <data android:mimeType="vnd.android.cursor.item/contact" />
                 <data android:mimeType="vnd.android.cursor.item/person" />
             </intent-filter>
+            <!-- Add / attach a phone number as a contact, from BasicSms' "+" or the dialer's
+                 "add contact". Opens the editor prefilled with the handed-off number. -->
+            <intent-filter>
+                <action android:name="android.intent.action.INSERT" />
+                <action android:name="android.intent.action.INSERT_OR_EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.dir/contact" />
+                <data android:mimeType="vnd.android.cursor.item/contact" />
+                <data android:mimeType="vnd.android.cursor.dir/person" />
+            </intent-filter>
         </activity>
 
     </application>
