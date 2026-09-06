@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.provider.BaseColumns
 import android.provider.MediaStore
 import android.util.Size
 import androidx.camera.core.ImageCapture
@@ -163,21 +164,40 @@ object CaptureStore {
         context.contentResolver.loadThumbnail(uri, Size(256, 256), null)
     }.getOrNull()
 
-    /** Thumbnail of the newest shot we saved, for the preview button on launch. */
+    /** Thumbnail of the newest capture (photo OR video), for the preview button on launch. */
     fun latestThumbnail(context: Context): Bitmap? =
-        latestImageUri(context)?.let { thumbnail(context, it) }
+        latestMediaUri(context)?.let { thumbnail(context, it) }
 
     /** Newest photo in our folder, or null if none yet. */
-    fun latestImageUri(context: Context): Uri? {
-        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(MediaStore.Images.Media._ID)
-        val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
+    fun latestImageUri(context: Context): Uri? =
+        latestIn(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)?.first
+
+    /** Newest video in our folder, or null if none yet. */
+    fun latestVideoUri(context: Context): Uri? =
+        latestIn(context, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)?.first
+
+    /** Newest capture in our folder, photo or video, whichever was added most recently. */
+    fun latestMediaUri(context: Context): Uri? {
+        val img = latestIn(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        val vid = latestIn(context, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+        return when {
+            img == null -> vid?.first
+            vid == null -> img.first
+            else -> (if (vid.second >= img.second) vid else img).first
+        }
+    }
+
+    /** (uri, DATE_ADDED) of the newest item in [collection] under our folder, or null. */
+    private fun latestIn(context: Context, collection: Uri): Pair<Uri, Long>? {
+        val projection = arrayOf(BaseColumns._ID, MediaStore.MediaColumns.DATE_ADDED)
+        val selection = "${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ?"
         val args = arrayOf("$FOLDER%")
-        val sort = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+        val sort = "${MediaStore.MediaColumns.DATE_ADDED} DESC"
         context.contentResolver.query(collection, projection, selection, args, sort)?.use { c ->
             if (c.moveToFirst()) {
-                val id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                return Uri.withAppendedPath(collection, id.toString())
+                val id = c.getLong(c.getColumnIndexOrThrow(BaseColumns._ID))
+                val date = c.getLong(c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED))
+                return Uri.withAppendedPath(collection, id.toString()) to date
             }
         }
         return null

@@ -100,6 +100,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.montb.basiccamera.CameraActivity
 import dev.montb.basiccamera.camera.CameraGestures
 import dev.montb.basiccamera.camera.Lenses
+import dev.montb.basiccamera.media.AudioBoost
 import dev.montb.basiccamera.media.CaptureStore
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -200,6 +201,9 @@ private fun CameraContent(
     // "High efficiency": save our own shots as HEIC (~half the size of JPEG). On by default
     // (user optimizes for storage); capture-intent shots stay JPEG regardless (see capturePhoto).
     var heicEnabled by remember { mutableStateOf(true) }
+    // Opt-in post-record audio boost (peak-normalize + de-click). Off by default so music
+    // recordings stay untouched; only applied to the next clip you record while it's on.
+    var boostAudio by remember { mutableStateOf(false) }
     // Captured photo resolution. 12 MP = the sensor's full binned output; "Max" tries the
     // sensor's highest (the 50 MP high-res mode if the ROM exposes it, else ~12.5 MP).
     var photoResolution by remember { mutableStateOf(PhotoResolution.MP12) }
@@ -209,6 +213,9 @@ private fun CameraContent(
     var elapsedMs by remember { mutableLongStateOf(0L) }
     var capturing by remember { mutableStateOf(false) }
     var lastThumb by remember { mutableStateOf<Bitmap?>(null) }
+    // URI of the newest capture (photo or video) so the gallery button opens the right item
+    // with its real MIME type, a recorded video then resolves to video players, not photo apps.
+    var lastUri by remember { mutableStateOf<Uri?>(null) }
     // Rear lenses the ROM exposes (discovered at startup); starts as just the default cam.
     var backLenses by remember { mutableStateOf(Lenses.DEFAULT_BACK) }
     // Zoom buttons: each discovered rear lens at 1×, plus a "2×" digital crop of the main.
@@ -268,7 +275,9 @@ private fun CameraContent(
     // Secure sessions only ever show thumbnails of shots taken in this session.
     LaunchedEffect(Unit) {
         if (!secure) {
-            lastThumb = withContext(Dispatchers.IO) { CaptureStore.latestThumbnail(context) }
+            val uri = withContext(Dispatchers.IO) { CaptureStore.latestMediaUri(context) }
+            lastUri = uri
+            if (uri != null) lastThumb = withContext(Dispatchers.IO) { CaptureStore.thumbnail(context, uri) }
         }
     }
 
@@ -287,6 +296,7 @@ private fun CameraContent(
 
     fun refreshThumb(uri: Uri?) {
         if (uri == null) return
+        lastUri = uri
         scope.launch {
             withContext(Dispatchers.IO) { CaptureStore.thumbnail(context, uri) }?.let { lastThumb = it }
         }
@@ -369,7 +379,17 @@ private fun CameraContent(
                 if (event.hasError()) {
                     context.toast("Recording failed (code ${event.error})")
                 } else {
-                    refreshThumb(event.outputResults.outputUri)
+                    val uri = event.outputResults.outputUri
+                    refreshThumb(uri)
+                    // Post-process off the main thread (guarded, keeps the original on failure):
+                    // Boost = peak-normalize + de-click (re-encode); otherwise a lossless de-click
+                    // that only trims the click off the tail and leaves the audio otherwise raw.
+                    if (audioGranted) {
+                        Thread {
+                            if (boostAudio) AudioBoost.process(context, uri)
+                            else AudioBoost.declick(context, uri)
+                        }.start()
+                    }
                 }
                 recording = null
             }
@@ -460,6 +480,14 @@ private fun CameraContent(
                         rotation = controlRotation,
                         onClick = { torchOn = !torchOn },
                     )
+                    // Opt-in audio boost for the next recording (normalize + de-click).
+                    if (audioGranted) {
+                        TopBarChip(
+                            label = "Boost",
+                            active = boostAudio,
+                            rotation = controlRotation,
+                        ) { boostAudio = !boostAudio }
+                    }
                 } else {
                     val (icon, desc) = when (flashMode) {
                         ImageCapture.FLASH_MODE_ON -> Icons.Filled.FlashOn to "Flash on"
@@ -539,12 +567,15 @@ private fun CameraContent(
                     context.toast("Unlock the phone to view your photos")
                     return@ThumbnailButton
                 }
-                val uri = CaptureStore.latestImageUri(context)
+                val uri = lastUri ?: CaptureStore.latestMediaUri(context)
                 if (uri != null) {
                     runCatching {
+                        // Use the item's real MIME type so a video opens in a video player and a
+                        // photo in an image viewer, rather than forcing "image/*" for everything.
+                        val type = context.contentResolver.getType(uri) ?: "*/*"
                         context.startActivity(
-                            Intent(Intent.ACTION_VIEW, uri)
-                                .setDataAndType(uri, "image/*")
+                            Intent(Intent.ACTION_VIEW)
+                                .setDataAndType(uri, type)
                                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         )
                     }

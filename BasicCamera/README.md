@@ -13,6 +13,7 @@ A minimal **camera app** built on CameraX, photo, video, and HEIC, fully offline
 ## Features
 
 - **Photo & video** with front/back switching and multi-lens selection
+- **Video audio**: the stop-click is removed automatically as a lossless tail trim (audio otherwise untouched), plus an optional **Boost** toggle that peak-normalizes a quiet recording, louder without compressing dynamics, so music keeps its quiet/loud contrast
 - **HEIC capture** (`androidx.heifwriter`) as a toggle vs. JPEG, for smaller high-quality photos
 - **Aspect ratio** (4:3 / 16:9) and a resolution / quality picker (favoring maximum quality)
 - **Pinch-to-zoom** with zoom presets and an on-screen indicator, tap-to-focus, flash
