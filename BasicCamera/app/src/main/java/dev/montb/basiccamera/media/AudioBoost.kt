@@ -55,13 +55,14 @@ object AudioBoost {
 
     // ---- Always-on, lossless de-click (used when Boost is off) ----
 
-    private const val DECLICK_TRIM_US = 45_000L
+    private const val DECLICK_TRIM_US = 150_000L
 
     /**
-     * Lossless de-click: re-mux the recording, dropping only the final ~45 ms of audio, where the
-     * stop-click sits. The video and all earlier audio are copied bit-for-bit (no re-encode), so
-     * quality is untouched, just the near-silent tail after you tap stop is trimmed. Guarded so a
-     * failure leaves the original recording exactly as it was.
+     * Lossless de-click: re-mux the recording, dropping the final ~150 ms of audio, where the
+     * stop-click sits, most often the mechanical noise of the volume-rocker press the mic picks
+     * up when you stop with the side button. The video and all earlier audio are copied
+     * bit-for-bit (no re-encode), so quality is untouched; only the tail after you press stop
+     * (non-content) is trimmed. Guarded so a failure leaves the original recording exactly as it was.
      */
     fun declick(context: Context, videoUri: Uri) {
         val cache = context.cacheDir
