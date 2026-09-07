@@ -12,8 +12,8 @@ android {
         applicationId = "dev.montb.basiccontacts"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.2"
 
         // Your ROG Phone 6 is arm64 (Snapdragon 8+ Gen 1). Building ONLY arm64-v8a
         // keeps the APK small and skips emitting code for ABIs you'll never run.

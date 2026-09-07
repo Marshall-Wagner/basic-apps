@@ -15,8 +15,8 @@ android {
         // ROG Phone 6 is Android 14, so this loses nothing on the target device.
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.2"
 
         // ROG Phone 6 is arm64 only.
         ndk { abiFilters += "arm64-v8a" }

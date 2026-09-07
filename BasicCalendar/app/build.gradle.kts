@@ -13,7 +13,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 2
-        versionName = "1.0.1"
+        versionName = "1.0.2"
 
         // ROG Phone 6 is arm64 — build only arm64-v8a to keep the APK small.
         ndk { abiFilters += "arm64-v8a" }
