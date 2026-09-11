@@ -482,8 +482,10 @@ private fun CameraContent(
                     )
                     // Opt-in audio boost for the next recording (normalize + de-click).
                     if (audioGranted) {
+                        // Label states the status ("Boost on"/"Boost off"), since the chip's
+                        // active-highlight alone is too faint to read on the viewfinder.
                         TopBarChip(
-                            label = "Boost",
+                            label = if (boostAudio) "Boost on" else "Boost off",
                             active = boostAudio,
                             rotation = controlRotation,
                         ) { boostAudio = !boostAudio }
