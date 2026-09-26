@@ -70,26 +70,26 @@ object Layouts {
     const val WIDE_MOD = 1.5f
     const val NARROW_MOD = 1f
 
-    fun english(modWeight: Float = WIDE_MOD): Layout = Layout(
+    fun english(modWeight: Float = WIDE_MOD, spaceLabel: String = ""): Layout = Layout(
         listOf(
             topRow("qwertyuiop", enPopups),
             letterRow("asdfghjkl", enPopups),
             listOf(Key(KeyAction.Shift, "⇧", modWeight)) +
                 letterRow("zxcvbnm", enPopups) +
                 listOf(Key(KeyAction.Backspace, "⌫", modWeight)),
-            bottomRow(modWeight)
+            bottomRow(modWeight, spaceLabel = spaceLabel)
         )
     )
 
     // Russian ЙЦУКЕН layout (top row has 11 keys; first 10 get number hints).
-    fun russian(modWeight: Float = WIDE_MOD): Layout = Layout(
+    fun russian(modWeight: Float = WIDE_MOD, spaceLabel: String = ""): Layout = Layout(
         listOf(
             topRow("йцукенгшщзх"),
             letterRow("фывапролджэ"),
             listOf(Key(KeyAction.Shift, "⇧", modWeight)) +
                 letterRow("ячсмитьбю") +
                 listOf(Key(KeyAction.Char("ё")), Key(KeyAction.Backspace, "⌫", modWeight)),
-            bottomRow(modWeight)
+            bottomRow(modWeight, spaceLabel = spaceLabel)
         )
     )
 
@@ -124,13 +124,19 @@ object Layouts {
     // the extra symbol pages, that's the row-3 "=\<" / "?123" key's job.
     // Clipboard moves to a long-press of the comma key so we don't lose it. The globe
     // (language switch) lives on the emoji key's long-press too.
-    private fun bottomRow(modWeight: Float = WIDE_MOD, toggleLabel: String = "123"): List<Key> = listOf(
+    private fun bottomRow(
+        modWeight: Float = WIDE_MOD,
+        toggleLabel: String = "123",
+        spaceLabel: String = ""
+    ): List<Key> = listOf(
         Key(KeyAction.NumbersToggle, toggleLabel, modWeight),
         // long-press , -> clipboard
         Key(KeyAction.Char(","), ",", 1f, hint = "📋", longPressAction = KeyAction.Clipboard),
         // long-press emoji -> switch language
         Key(KeyAction.Emoji, "☺", 1f, hint = "🌐", longPressAction = KeyAction.Language),
-        Key(KeyAction.Space, "", 5f),
+        // The space bar names the active language (the usual IME convention), so Chinese mode
+        // is obvious before you start typing, not only once candidates appear.
+        Key(KeyAction.Space, spaceLabel, 5f),
         Key(KeyAction.Char("."), ".", 1f),
         Key(KeyAction.Enter, "⏎", modWeight)
     )
