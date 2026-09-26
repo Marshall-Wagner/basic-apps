@@ -45,8 +45,22 @@ class KanaEngineTest {
 
     @Test
     fun doubleNIsSyllabicN() {
-        assertEquals("ん", kana("nn"))
+        // "nn" on its own is held pending: it is only ん once we know the second n does not
+        // belong to the な-row. It settles on flush.
+        assertEquals("", kana("nn"))
+        assertEquals("nn", pending("nn"))
+        assertEquals("ん", KanaEngine.flush(pending("nn")))
+        // "nn" before a consonant is unambiguously ん, so it resolves immediately.
+        assertEquals("ん", kana("nnk"))
+        assertEquals("k", pending("nnk"))
+    }
+
+    @Test
+    fun doubleNBeforeAVowelSplitsIntoNPlusNaRow() {
+        // The case that matters: the second n starts な-row, so this is んに, not んい.
+        assertEquals("んに", kana("nni"))
         assertEquals("こんにちわ", kana("konnichiwa"))
+        assertEquals("おんな", kana("onna"))
     }
 
     @Test

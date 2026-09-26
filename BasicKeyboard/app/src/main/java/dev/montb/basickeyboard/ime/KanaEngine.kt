@@ -33,7 +33,8 @@ object KanaEngine {
         "ta" to "た", "chi" to "ち", "ti" to "ち", "tsu" to "つ", "tu" to "つ",
         "te" to "て", "to" to "と",
         "da" to "だ", "di" to "ぢ", "du" to "づ", "de" to "で", "do" to "ど",
-        "na" to "な", "ni" to "に", "nu" to "ぬ", "ne" to "ね", "no" to "の", "nn" to "ん",
+        // NB: "nn" is deliberately NOT here. It is ambiguous and is resolved by rule below.
+        "na" to "な", "ni" to "に", "nu" to "ぬ", "ne" to "ね", "no" to "の",
         "ha" to "は", "hi" to "ひ", "fu" to "ふ", "hu" to "ふ", "he" to "へ", "ho" to "ほ",
         "ba" to "ば", "bi" to "び", "bu" to "ぶ", "be" to "べ", "bo" to "ぼ",
         "pa" to "ぱ", "pi" to "ぴ", "pu" to "ぷ", "pe" to "ぺ", "po" to "ぽ",
@@ -88,10 +89,23 @@ object KanaEngine {
             }
             val c = romaji[i]
             val next = if (i + 1 < romaji.length) romaji[i + 1] else null
-            // Doubled consonant is the sokuon: "tta" -> った. 'n' is excluded, "nn" is ん.
+            // Doubled consonant is the sokuon: "tta" -> った. 'n' is excluded, handled below.
             if (next != null && c == next && c !in VOWELS && c != 'n' && c.isLetter()) {
                 out.append(SMALL_TSU)
                 i++
+                continue
+            }
+            // "nn" is ambiguous and cannot be a plain table entry. On its own it is ん, but in
+            // "nni" the second n starts the な-row, so it has to split as ん + に
+            // ("konnichiwa" -> こんにちわ, NOT こんいちわ). Look past the pair to decide, and hold
+            // it pending while the answer is still unknown.
+            if (c == 'n' && next == 'n') {
+                val after = if (i + 2 < romaji.length) romaji[i + 2] else null
+                when {
+                    after == null -> break@outer                            // wait for the next key
+                    after in VOWELS || after == 'y' -> { out.append(SYLLABIC_N); i++ }
+                    else -> { out.append(SYLLABIC_N); i += 2 }
+                }
                 continue
             }
             // A lone 'n' before another consonant is syllabic ん: "kanji" -> かんじ.
@@ -106,8 +120,10 @@ object KanaEngine {
         return out.toString() to romaji.substring(i)
     }
 
-    /** What a pending tail becomes when input ends: a lone "n" is ん, anything else stays literal. */
-    fun flush(pending: String): String = if (pending == "n") SYLLABIC_N else pending
+    /** What a pending tail becomes when input ends: "n" and "nn" both settle to ん (the latter is
+     *  held pending by [convert] until it is clear it isn't ん + な-row); anything else stays literal. */
+    fun flush(pending: String): String =
+        if (pending == "n" || pending == "nn") SYLLABIC_N else pending
 
     /** Hiragana U+3041..U+3096 map onto katakana by a fixed +0x60 offset; anything else passes through. */
     fun toKatakana(hiragana: String): String = buildString {
