@@ -42,13 +42,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # GitHub's ubuntu runners already ship the Android SDK, so use it directly rather than the
+      # third-party android-actions/setup-android action. That action began failing on an updated
+      # runner image and broke every job before a single line was compiled; dropping it also
+      # removes a dependency. The echoes are here so a future breakage is diagnosable from the log.
       - name: Install SDK platform and build-tools
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="${ANDROID_HOME:-$ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          echo "sdkmanager: $SDKMANAGER"
+          echo "ANDROID_HOME=${ANDROID_HOME:-unset} ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-unset}"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       # No Gradle wrapper is committed, so provision Gradle here. 8.9 is the version AGP
       # 8.7.3 targets; setup-gradle puts `gradle` on PATH and caches the build.
