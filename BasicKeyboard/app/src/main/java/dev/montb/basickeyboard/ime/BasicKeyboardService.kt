@@ -20,13 +20,14 @@ internal enum class Lang(val label: String, val description: String) {
     RUSSIAN("Русский", "Russian"),
     PINYIN("中文", "Chinese (pinyin)"),
     HIRAGANA("あ", "Japanese (hiragana)"),
-    KATAKANA("ア", "Japanese (katakana)")
+    KATAKANA("ア", "Japanese (katakana)"),
+    KOREAN("한", "Korean (Hangul)")
 }
 
 /**
- * The keyboard. Switches between input modes (English, Russian, Chinese pinyin, Japanese kana),
- * a symbols layer, and an emoji panel, sending characters to the focused field via the input
- * connection.
+ * The keyboard. Switches between input modes (English, Russian, Chinese pinyin, Japanese kana,
+ * Korean Hangul), a symbols layer, and an emoji panel, sending characters to the focused field via
+ * the input connection.
  */
 class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
 
@@ -40,8 +41,10 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
     private var passwordField = false   // current field is a password/secure input
     private var numPad = NumPad.NONE    // current field wants a number pad (numeric / phone)
 
-    // Chinese mode: the raw latin letters typed so far, shown underlined in the field via
-    // setComposingText until a candidate (or the pinyin itself) is committed. Empty = not composing.
+    // The in-progress buffer, shown underlined in the field via setComposingText until it is
+    // committed. Empty = not composing. What it holds depends on the mode: raw latin letters for
+    // Chinese pinyin and Japanese romaji, and jamo for Korean (which renders as the composed
+    // syllable block rather than as the letters themselves).
     private val composing = StringBuilder()
 
     private lateinit var keyboardView: KeyboardView
@@ -297,6 +300,14 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
                         commitComposingRaw()
                         commit(if (ch == ",") "、" else "。")
                     }
+                    // Korean: the keys are jamo, so every letter key feeds the composer, shifted
+                    // tense consonants included. There is no plain-latin escape on this layer (the
+                    // same as Russian mode); switch to English for latin.
+                    koreanActive() && ch.length == 1 && HangulEngine.isJamo(ch[0]) -> {
+                        composing.append(ch)
+                        convertHangul()
+                        if (shifted && !capsLock) { shifted = false; applyShift() }
+                    }
                     else -> {
                         commitComposingRaw()
                         commit(ch)
@@ -305,11 +316,13 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
                 }
             }
             KeyAction.Backspace -> {
-                // While composing, backspace edits the pinyin rather than the field's text.
+                // While composing, backspace edits the buffer rather than the field's text. For
+                // Korean the buffer is jamo, so this peels the syllable block apart a keypress at
+                // a time (한 -> 하 -> ㅎ) for free.
                 if (composing.isNotEmpty()) {
                     composing.deleteCharAt(composing.length - 1)
                     updateComposing()
-                } else backspace()
+                } else if (!backspaceDecomposed()) backspace()
             }
             KeyAction.Space -> when {
                 composing.isEmpty() -> commit(" ")
@@ -318,12 +331,21 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
                     val best = PinyinEngine.candidates(composing.toString(), 1).firstOrNull()
                     if (best != null) pickCandidate(best) else commitComposingRaw()
                 }
+                // Korean has no conversion step to accept, and Korean is written with spaces
+                // between words, so space settles the block AND types a real space.
+                koreanActive() -> { commitComposingRaw(); commit(" ") }
                 // Japanese: kana conversion is unambiguous, so there is nothing to choose;
                 // space just settles the pending romaji (never consults the pinyin dictionary).
                 else -> commitComposingRaw()
             }
             // Enter while composing types the pinyin as-is: the escape hatch when no candidate fits.
-            KeyAction.Enter -> if (composing.isNotEmpty()) commitComposingRaw() else onEnter()
+            // Korean needs no such escape (the block on screen is already the final text), so there
+            // enter settles it and still performs the field's action, e.g. sending the message.
+            KeyAction.Enter -> when {
+                composing.isEmpty() -> onEnter()
+                koreanActive() -> { commitComposingRaw(); onEnter() }
+                else -> commitComposingRaw()
+            }
             KeyAction.Shift -> toggleShift()
             KeyAction.SymbolsLayer -> { commitComposingRaw(); nextSymbolPage() }
             KeyAction.NumbersToggle -> { commitComposingRaw(); toggleNumbers() }
@@ -385,6 +407,10 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         (lang == Lang.HIRAGANA || lang == Lang.KATAKANA) &&
             mode == Mode.LETTERS && numPad == NumPad.NONE
 
+    /** Korean mode, on the letter layout. */
+    private fun koreanActive(): Boolean =
+        lang == Lang.KOREAN && mode == Mode.LETTERS && numPad == NumPad.NONE
+
     /**
      * Japanese: take any completed syllables out of the romaji buffer and type them as kana,
      * leaving only an incomplete tail pending. commitText replaces the pending composing region,
@@ -400,7 +426,40 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         updateComposing()
     }
 
-    /** Show the in-progress pinyin underlined in the field and refresh the candidates bar. */
+    /**
+     * Korean: move any block that can no longer change out of the buffer and into the field,
+     * keeping only the live block composing. Mirrors [convertKana], except the part left pending
+     * is itself already valid text, because the next keypress may still rewrite it: after ㅎㅏㄴ
+     * the 한 on screen becomes 하 the moment a vowel arrives.
+     */
+    private fun convertHangul() {
+        val (settled, live) = HangulEngine.convert(composing.toString())
+        if (settled.isNotEmpty()) commit(settled)
+        composing.setLength(0)
+        composing.append(live)
+        updateComposing()
+    }
+
+    /**
+     * Korean backspace once the buffer is empty: take the finished syllable before the cursor
+     * apart and put it back in the buffer minus its last jamo, so 한 goes to 하 rather than
+     * vanishing whole. Returns false when there is nothing decomposable there, leaving the caller
+     * to do an ordinary delete.
+     */
+    private fun backspaceDecomposed(): Boolean {
+        if (!koreanActive()) return false
+        val ic = currentInputConnection ?: return false
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return false   // a selection deletes as usual
+        val prev = ic.getTextBeforeCursor(1, 0)
+        if (prev == null || prev.length != 1 || !HangulEngine.isSyllable(prev[0])) return false
+        val jamos = HangulEngine.decompose(prev[0])
+        ic.deleteSurroundingText(1, 0)
+        composing.append(jamos.dropLast(1))
+        updateComposing()
+        return true
+    }
+
+    /** Show the in-progress buffer underlined in the field and refresh the candidates bar. */
     private fun updateComposing() {
         val ic = currentInputConnection
         if (composing.isEmpty()) {
@@ -408,7 +467,10 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
             showClipboardStrip()
             return
         }
-        ic?.setComposingText(composing, 1)
+        // Korean composes its jamo into a syllable block; the other modes show the letters typed.
+        ic?.setComposingText(
+            if (koreanActive()) HangulEngine.compose(composing.toString()) else composing, 1
+        )
         // Only Chinese needs a candidates bar. Kana conversion is unambiguous, so the pending
         // romaji showing underlined in the field is feedback enough.
         if (pinyinActive() && ::candidatesView.isInitialized) {
@@ -432,15 +494,19 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Settle whatever is pending: pinyin types its letters as-is, Japanese resolves a trailing
-     *  lone "n" to ん (anything else stays literal). */
+     *  lone "n" to ん (anything else stays literal), Korean composes its jamo into blocks. */
     private fun commitComposingRaw() {
         if (composing.isEmpty()) return
         val pending = composing.toString()
         composing.setLength(0)
-        val text = if (japaneseActive()) {
-            val settled = KanaEngine.flush(pending)
-            if (lang == Lang.KATAKANA) KanaEngine.toKatakana(settled) else settled
-        } else pending
+        val text = when {
+            japaneseActive() -> {
+                val settled = KanaEngine.flush(pending)
+                if (lang == Lang.KATAKANA) KanaEngine.toKatakana(settled) else settled
+            }
+            koreanActive() -> HangulEngine.compose(pending)
+            else -> pending
+        }
         currentInputConnection?.commitText(text, 1)
         showClipboardStrip()
     }
@@ -509,8 +575,8 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         applyLayout()
     }
 
-    /** Long-pressing the globe opens the picker, so any of the five modes is one tap away rather
-     *  than up to four long-presses of a cycle. */
+    /** Long-pressing the globe opens the picker, so any mode is one tap away rather than several
+     *  long-presses of a cycle. */
     private fun showLanguagePicker() {
         setBody(
             LanguagePickerView(
@@ -566,12 +632,14 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         keyboardView.layout = when (mode) {
             Mode.SYMBOLS -> Layouts.symbols(mw)
             Mode.SYMBOLS2 -> Layouts.symbols2(mw)
-            // Every mode but Russian types on the QWERTY letters (pinyin and romaji included);
-            // only the key routing differs, so the layout choice is just Russian or not. The
-            // space-bar label comes from the mode itself.
-            Mode.LETTERS ->
-                if (lang == Lang.RUSSIAN) Layouts.russian(mw, lang.label)
-                else Layouts.english(mw, lang.label)
+            // Russian and Korean have their own key faces (Cyrillic, jamo). The rest type on the
+            // QWERTY letters, pinyin and romaji included, and differ only in how the keys are
+            // routed. The space-bar label comes from the mode itself.
+            Mode.LETTERS -> when (lang) {
+                Lang.RUSSIAN -> Layouts.russian(mw, lang.label)
+                Lang.KOREAN -> Layouts.korean(mw, lang.label)
+                else -> Layouts.english(mw, lang.label)
+            }
         }
         applyShift()
         // Make sure the keyboard (not an emoji/clipboard panel) is the visible body.

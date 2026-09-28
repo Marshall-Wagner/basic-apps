@@ -204,7 +204,8 @@ class KeyboardView(
         key.label?.let { return it }
         val a = key.action
         return if (a is KeyAction.Char) {
-            if (shifted) a.text.uppercase() else a.text
+            // Hangul keys carry their shifted form explicitly; latin/Cyrillic just uppercase.
+            if (shifted) (a.shiftText ?: a.text.uppercase()) else a.text
         } else ""
     }
 
@@ -265,7 +266,12 @@ class KeyboardView(
     private fun fireKey(key: Key) {
         val action = key.action
         if (action is KeyAction.Char && shifted) {
-            listener.onKeyText(action.text.uppercase())
+            // A key with an explicit shifted form is still ordinary input for its script (a tense
+            // Hangul consonant), so it goes through onKey where the composer can see it. Plain
+            // uppercasing is literal text and takes the onKeyText path as before.
+            val alt = action.shiftText
+            if (alt != null) listener.onKey(KeyAction.Char(alt, action.popup))
+            else listener.onKeyText(action.text.uppercase())
         } else {
             listener.onKey(action)
         }

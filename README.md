@@ -27,12 +27,12 @@ Mostly to fix real problems on my own phones:
 |-----|------|--------------|
 | **[BasicPhone](BasicPhone/)** | Default dialer / phone | Call log, full in-call UI (`InCallService`/Telecom), STIR/SHAKEN spam screening, voicemail with saved PIN + DTMF, Bluetooth call-audio routing, VoLTE indicator, multi-SIM, offline number lookup, call blocking |
 | **[BasicSms](BasicSms/)** | Default SMS app | Reliable background receipt (`SMS_DELIVER`), conversation threads, multi-SIM send, MMS images, backup import, notification handling |
-| **[BasicKeyboard](BasicKeyboard/)** | Keyboard | English, Russian, Chinese pinyin (offline conversion with a candidates bar), and Japanese kana (hiragana/katakana), symbols & emoji, auto number/dial pad for numeric & phone fields, multi-touch key rollover, held-backspace word delete, sensitive-clip-aware clipboard strip, adjustable size/style |
+| **[BasicKeyboard](BasicKeyboard/)** | Keyboard | English, Russian, Chinese pinyin (offline conversion with a candidates bar), Japanese kana (hiragana/katakana), and Korean Hangul (2-set, live syllable composition), symbols & emoji, auto number/dial pad for numeric & phone fields, multi-touch key rollover, held-backspace word delete, sensitive-clip-aware clipboard strip, adjustable size/style |
 | **[BasicCamera](BasicCamera/)** | Camera | Photo & video (CameraX), HEIC capture, aspect-ratio & resolution control, zoom presets, volume-button shutter, EXIF stripping |
 | **[BasicContacts](BasicContacts/)** | Contacts | List / detail / edit over `ContactsContract`, vCard import & export |
 | **[BasicClock](BasicClock/)** | Clock, alarms & timers | Time-zone-anchored alarms (ring at the correct local moment, right across DST & travel), ringtone picker, full-screen ring with snooze, world clock with live times + country names, plus a stopwatch and a background countdown timer |
 | **[BasicCalendar](BasicCalendar/)** | Calendar alarms | Set an alarm for a specific future date and time in any city's time zone; month grid + event list, none / weekly / monthly / yearly repeats, reminder lead time (30 / 60 min before, or none for a silent entry), full-screen ring with snooze, survives reboot & zone changes |
-| **[BasicMonitor](BasicMonitor/)** | System monitor | Live CPU model & clock, GPU model, RAM, swap, storage, battery, all with zero permissions from public APIs / world-readable sysfs |
+| **[BasicMonitor](BasicMonitor/)** | Hardware monitor | Live CPU model & clock, GPU model, RAM, swap, storage, battery, all with zero permissions from public APIs / world-readable sysfs |
 
 ---
 

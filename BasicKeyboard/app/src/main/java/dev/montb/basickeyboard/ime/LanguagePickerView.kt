@@ -11,9 +11,9 @@ import android.widget.ScrollView
 import android.widget.TextView
 
 /**
- * Pick an input mode directly. With five modes, cycling through them on the globe key took up to
- * four long-presses, so the globe opens this list instead and any mode is one tap away. The
- * current mode is ticked and highlighted.
+ * Pick an input mode directly. Once there was more than a handful of modes, cycling through them
+ * on the globe key took several long-presses to reach the last one, so the globe opens this list
+ * instead and any mode is one tap away. The current mode is ticked and highlighted.
  *
  * internal because its constructor takes [Lang], which is internal to this module.
  */
@@ -33,6 +33,7 @@ internal class LanguagePickerView(
         val selectedBg = if (dark) Color.parseColor("#3A3A3A") else Color.WHITE
         val density = resources.displayMetrics.density
 
+        val rowHeight = 48
         val list = LinearLayout(context).apply { orientation = VERTICAL }
         Lang.entries.forEach { lang ->
             val selected = lang == current
@@ -45,12 +46,16 @@ internal class LanguagePickerView(
                 gravity = Gravity.CENTER_VERTICAL
                 if (selected) setBackgroundColor(selectedBg)
                 setPadding((16 * density).toInt(), 0, (16 * density).toInt(), 0)
-                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, (48 * density).toInt())
+                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, (rowHeight * density).toInt())
                 setOnClickListener { onPick(lang) }
             })
         }
+        // Tall enough to show every mode without scrolling, so none is hidden below the fold and
+        // missed, but capped so the panel can't outgrow the keyboard it replaces. It still scrolls
+        // past the cap.
         addView(ScrollView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, (260 * density).toInt())
+            val fits = (Lang.entries.size * rowHeight).coerceAtMost(MAX_LIST_HEIGHT_DP)
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, (fits * density).toInt())
             addView(list)
         })
 
@@ -66,5 +71,10 @@ internal class LanguagePickerView(
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
             })
         })
+    }
+
+    private companion object {
+        /** Ceiling for the mode list, ~7 rows, so the picker stays a panel and not a full screen. */
+        const val MAX_LIST_HEIGHT_DP = 336
     }
 }

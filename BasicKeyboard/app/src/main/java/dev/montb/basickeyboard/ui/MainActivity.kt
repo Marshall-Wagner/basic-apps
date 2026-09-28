@@ -79,7 +79,8 @@ private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit) {
         Text("Basic Keyboard", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Offline keyboard — English & Russian, number row, symbols, emoji. " +
+            "Offline keyboard: English, Russian, Chinese pinyin, Japanese kana and Korean " +
+                "Hangul, plus a number row, symbols and emoji. " +
                 "No internet access, so nothing you type can leave the device.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
@@ -121,7 +122,7 @@ private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit) {
 
         Spacer(Modifier.height(24.dp))
         Text(
-            "Tip: tap the 🌐 globe key on the keyboard to switch English ⇄ Russian. " +
+            "Tip: long-press the ☺ key (the one hinted 🌐) to pick a language. " +
                 "Long-press a letter for accents.",
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center
@@ -141,7 +142,7 @@ private fun PasswordManagerPicker() {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)) {
         Text("Password key opens", style = MaterialTheme.typography.bodyMedium)
         Text(
-            "More than one password manager is installed — pick which the 🔑 key opens.",
+            "More than one password manager is installed, pick which the 🔑 key opens.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

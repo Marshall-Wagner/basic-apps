@@ -2,8 +2,15 @@ package dev.montb.basickeyboard.ime
 
 /** What a key does when tapped. */
 sealed interface KeyAction {
-    /** Commit this text (a letter/symbol). [popup] = long-press alternatives. */
-    data class Char(val text: String, val popup: List<String> = emptyList()) : KeyAction
+    /** Commit this text (a letter/symbol). [popup] = long-press alternatives.
+     *  [shiftText] is an explicit shifted form for scripts where shift is not uppercasing:
+     *  Hangul's shift gives the tense consonants (ㅂ -> ㅃ), and ㅐ/ㅔ give ㅒ/ㅖ. Null means
+     *  shift uppercases, the behaviour for every latin and Cyrillic key. */
+    data class Char(
+        val text: String,
+        val popup: List<String> = emptyList(),
+        val shiftText: String? = null
+    ) : KeyAction
     data object Shift : KeyAction
     data object Backspace : KeyAction
     data object Space : KeyAction
@@ -50,19 +57,27 @@ object Layouts {
         "y" to listOf("ÿ")
     )
 
-    private fun letterRow(letters: String, popups: Map<String, List<String>> = emptyMap()): List<Key> =
+    private fun letterRow(
+        letters: String,
+        popups: Map<String, List<String>> = emptyMap(),
+        shifts: Map<String, String> = emptyMap()
+    ): List<Key> =
         letters.map { c ->
             val s = c.toString()
-            Key(KeyAction.Char(s, popups[s] ?: emptyList()))
+            Key(KeyAction.Char(s, popups[s] ?: emptyList(), shifts[s]))
         }
 
     /** Top row: each key shows its number in the corner; long-press types the number. */
-    private fun topRow(letters: String, popups: Map<String, List<String>> = emptyMap()): List<Key> =
+    private fun topRow(
+        letters: String,
+        popups: Map<String, List<String>> = emptyMap(),
+        shifts: Map<String, String> = emptyMap()
+    ): List<Key> =
         letters.mapIndexed { i, c ->
             val s = c.toString()
             val num = TOP_NUMBERS.getOrNull(i)?.toString()
             val pop = listOfNotNull(num) + (popups[s] ?: emptyList())
-            Key(KeyAction.Char(s, pop), hint = num)
+            Key(KeyAction.Char(s, pop, shifts[s]), hint = num)
         }
 
     // Width of the wide modifier keys (Shift/Backspace/123/=\</Enter). 1.5f = the
@@ -89,6 +104,26 @@ object Layouts {
             listOf(Key(KeyAction.Shift, "⇧", modWeight)) +
                 letterRow("ячсмитьбю") +
                 listOf(Key(KeyAction.Char("ё")), Key(KeyAction.Backspace, "⌫", modWeight)),
+            bottomRow(modWeight, spaceLabel = spaceLabel)
+        )
+    )
+
+    // Korean 2-set (두벌식), the standard layout: consonants on the left half, vowels on the
+    // right, in the same 10/9/7 shape as QWERTY (the jamo sit on the QWERTY key positions).
+    // Shift gives the five tense consonants and the two extra vowels; everything else is
+    // unshifted, so [koShift] covers exactly the keys that have a second form.
+    private val koShift = mapOf(
+        "ㅂ" to "ㅃ", "ㅈ" to "ㅉ", "ㄷ" to "ㄸ", "ㄱ" to "ㄲ", "ㅅ" to "ㅆ",
+        "ㅐ" to "ㅒ", "ㅔ" to "ㅖ"
+    )
+
+    fun korean(modWeight: Float = WIDE_MOD, spaceLabel: String = ""): Layout = Layout(
+        listOf(
+            topRow("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", shifts = koShift),
+            letterRow("ㅁㄴㅇㄹㅎㅗㅓㅏㅣ"),
+            listOf(Key(KeyAction.Shift, "⇧", modWeight)) +
+                letterRow("ㅋㅌㅊㅍㅠㅜㅡ") +
+                listOf(Key(KeyAction.Backspace, "⌫", modWeight)),
             bottomRow(modWeight, spaceLabel = spaceLabel)
         )
     )
