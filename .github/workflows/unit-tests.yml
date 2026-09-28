@@ -2,7 +2,9 @@ name: Unit tests
 
 # Runs each app's JVM unit tests (src/test) on the plain runner. No device/emulator, no
 # signing, no secrets. These are 8 independent Gradle projects; every one with tests gets
-# its own parallel job. BasicCamera is omitted, it has no unit tests (CameraX/hardware only).
+# its own parallel job, which is now all 8. BasicCamera is mostly CameraX and cannot be
+# tested off-device, but the Boost pass's gain/fade arithmetic is plain Kotlin (AudioGain)
+# and is covered here.
 
 on:
   push:
@@ -32,6 +34,7 @@ jobs:
           - BasicMonitor
           - BasicContacts
           - BasicSms
+          - BasicCamera
     steps:
       # v5 actions run on Node 24; the v4/v3 generation targets the deprecated Node 20.
       - name: Check out
