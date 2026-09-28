@@ -71,4 +71,7 @@ dependencies {
     implementation(libs.androidx.camera.video)
     // HEIF/HEIC still encoder for the "High efficiency" capture path.
     implementation(libs.androidx.heifwriter)
+
+    // Local JVM unit tests (the Boost gain/fade arithmetic). Run: ./gradlew test
+    testImplementation("junit:junit:4.13.2")
 }

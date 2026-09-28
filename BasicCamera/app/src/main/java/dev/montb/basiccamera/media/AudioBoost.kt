@@ -9,7 +9,6 @@ import android.media.MediaMuxer
 import android.net.Uri
 import java.io.File
 import java.io.RandomAccessFile
-import kotlin.math.abs
 import kotlin.math.min
 
 /**
@@ -27,9 +26,8 @@ import kotlin.math.min
  */
 object AudioBoost {
 
-    private const val TARGET_PEAK = 0.97f        // normalize the loudest sample to ~ -0.26 dBFS
-    private const val MAX_GAIN = 12f             // don't over-amplify a near-silent clip (just noise)
-    private const val FADE_MS = 40               // fade the tail to kill the stop-click
+    // The gain/fade arithmetic lives in AudioGain, which has no Android dependencies and is
+    // unit-tested; this object is the MediaCodec plumbing around it.
     private const val TIMEOUT_US = 10_000L
 
     fun process(context: Context, videoUri: Uri) {
@@ -201,12 +199,8 @@ object AudioBoost {
                         ob.position(dInfo.offset); ob.limit(dInfo.offset + dInfo.size)
                         val bytes = ByteArray(dInfo.size)
                         ob.get(bytes)
-                        var i = 0
-                        while (i + 1 < bytes.size) {
-                            val s = ((bytes[i].toInt() and 0xff) or (bytes[i + 1].toInt() shl 8)).toShort().toInt()
-                            val a = abs(s); if (a > peak) peak = a
-                            i += 2
-                        }
+                        val p = AudioGain.peak(bytes)
+                        if (p > peak) peak = p
                         pcmOut.write(bytes)
                         totalShorts += bytes.size / 2
                     }
@@ -219,9 +213,9 @@ object AudioBoost {
         ex.unselectTrack(aIdx)
         if (peak == 0 || totalShorts == 0L) { ex.release(); return false }
 
-        val gain = min(MAX_GAIN, (TARGET_PEAK * 32767f) / peak)
-        val fadeShorts = FADE_MS.toLong() * sampleRate / 1000L * channels
-        val fadeStart = (totalShorts - fadeShorts).coerceAtLeast(0)
+        val gain = AudioGain.gainFor(peak)
+        val fadeShorts = AudioGain.fadeShorts(sampleRate, channels)
+        val fadeStart = AudioGain.fadeStart(totalShorts, fadeShorts)
 
         // ---- Pass 2: read the PCM back with gain + tail fade, encode to AAC, mux with the video. ----
         val enc = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
@@ -253,20 +247,7 @@ object AudioBoost {
                         enc.queueInputBuffer(inIdx, 0, 0, frames * 1_000_000L / sampleRate, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                         eInEos = true
                     } else {
-                        var i = 0
-                        while (i + 1 < n) {
-                            val s = ((chunk[i].toInt() and 0xff) or (chunk[i + 1].toInt() shl 8)).toShort().toInt()
-                            var g = gain
-                            val idx = shortsRead + i / 2
-                            if (fadeShorts > 0 && idx >= fadeStart) {
-                                g *= (1f - (idx - fadeStart).toFloat() / fadeShorts).coerceIn(0f, 1f)
-                            }
-                            var v = (s * g).toInt()
-                            if (v > 32767) v = 32767 else if (v < -32768) v = -32768
-                            chunk[i] = (v and 0xff).toByte()
-                            chunk[i + 1] = ((v shr 8) and 0xff).toByte()
-                            i += 2
-                        }
+                        AudioGain.apply(chunk, n, gain, shortsRead, fadeStart, fadeShorts)
                         ib.put(chunk, 0, n)
                         enc.queueInputBuffer(inIdx, 0, n, frames * 1_000_000L / sampleRate, 0)
                         shortsRead += n / 2
