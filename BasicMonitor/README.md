@@ -1,6 +1,6 @@
 # BasicMonitor
 
-A minimal, zero-permission **system monitor**, a portable, offline stand-in for gaming-phone dashboards like ASUS Armoury Crate.
+A minimal, zero-permission **hardware monitor**, a portable, offline stand-in for gaming-phone dashboards like ASUS Armoury Crate.
 
 > Part of the [Basic Apps suite](../README.md). No permissions at all; every stat comes from a public API or a world-readable file. No `INTERNET`.
 

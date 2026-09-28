@@ -4,9 +4,15 @@ Source of truth for the **github.com/Marshall-Wagner/basic-apps** repo's own met
 that live in GitHub's UI, not in a file) plus the README framing rules. Same idea as the
 `LinkedIn_Assets/*.txt` trackers: edit here, then paste into GitHub.
 
-Last updated: 2026-09-25 (de-capsed "INTERNET" in the About description; it reads as shouting in
-plain prose. Kept the caps in README/app-README bodies, where it is the literal Android
-permission name in backticks and therefore correct.)
+Last updated: 2026-09-26 ("dialer" -> "phone" and "system monitor" -> "hardware monitor"
+everywhere BasicMonitor is described (this file, both READMEs, the website card, both LinkedIn
+trackers), so the app list matches what the apps are actually called. "dialer" was inherited from
+the original description and was the only surface not saying "phone". "system monitor"
+over-promises: on desktop that term implies process management, which BasicMonitor does not do; it
+reports hardware state only, and "hardware monitor" is the established category name for that.
+Prior 2026-09-25: de-capsed "INTERNET" in the About description; it reads as shouting in plain
+prose. Kept the caps in README/app-README bodies, where it is the literal Android permission name
+in backticks and therefore correct.)
 
 ---
 
@@ -30,7 +36,7 @@ names cannot be code-formatted here. Use plain hyphens, no em/en dashes.
 CANONICAL (paste this):
 
 ```
-Eight minimal, fully-offline Android apps (SMS, dialer, contacts, keyboard, clock, calendar, camera, system monitor) - Kotlin/Compose, and none of them can reach the internet.
+Eight minimal, fully-offline Android apps (phone, SMS, contacts, keyboard, clock, calendar, camera, hardware monitor) - Kotlin/Compose, and none of them can reach the internet.
 ```
 
 Previous LIVE value (superseded 2026-09-25):
@@ -52,6 +58,10 @@ alarm-clock, android, android-app, calendar, camera, contacts, dialer, foss,
 jetpack-compose, keyboard, kotlin, material-design, material3, no-internet, offline,
 open-source, privacy, privacy-first, sms, system-monitor
 ```
+
+`dialer` and `system-monitor` stay as topics even though the prose says "phone" and "hardware
+monitor": topics exist to be searched, and those are the terms people actually search GitHub for.
+Prose describes, topics get found; they do not have to match word for word.
 
 ---
 
