@@ -40,19 +40,34 @@ Conversion is only as good as the bundled dictionary, `app/src/main/assets/pinyi
 entry per line as `<pinyin> <word> <frequency>`, where pinyin is the concatenated toneless
 syllables (`nihao`) and ü is written `v`. Higher frequency ranks first.
 
-The shipped file is a small hand-written **seed** (a few hundred common characters and phrases).
-It is enough for everyday phrases and to see the whole input path working, but it will miss plenty.
-For real vocabulary, convert an open dataset over it:
+The shipped file holds **65,124 entries** (about 48,000 of them multi-syllable words and phrases),
+generated from [rime-pinyin-simp](https://github.com/rime/rime-pinyin-simp) (`pinyin_simp.dict.yaml`,
+GPL-3, simplified Chinese with its own frequency data). Regenerate it with:
 
 ```bash
-python3 tools/make_pinyin_dict.py luna_pinyin.dict.yaml > app/src/main/assets/pinyin_dict.txt
+python3 tools/make_pinyin_dict.py pinyin_simp.dict.yaml > app/src/main/assets/pinyin_dict.txt
 ```
 
 The converter accepts RIME dictionaries, mozillazg's pinyin-data / phrase-pinyin-data, or an
 already-converted file; it strips tone marks, maps ü to `v`, and merges duplicates keeping the
 highest frequency. Keep the source data GPLv3-compatible, since this suite is GPL v3 (RIME dicts
-are GPL-3, pinyin-data is MIT, CC-CEDICT is CC BY-SA 4.0). The APK grows by roughly the size of
-whatever dictionary you ship.
+are GPL-3, pinyin-data is MIT, CC-CEDICT is CC BY-SA 4.0).
+
+**Frequencies matter more than vocabulary size.** A dictionary whose entries all share one
+frequency ranks candidates arbitrarily, which is worse to type with than a small but correctly
+ordered one: ask for `shi` and you get a rare CJK-extension character rather than 是. Two traps to
+know about when swapping the source:
+
+- `luna_pinyin.dict.yaml` is **traditional** and carries no usable weights. Its companion corpus
+  [rime-essay](https://github.com/rime/rime-essay) holds them, so it needs `--freq essay.txt`.
+  `pinyin_simp` needs neither, since it is simplified and already weighted.
+- RIME writes per-reading **percentages** on multi-reading characters (`的 de 99.97%`). Those are
+  not word frequencies, and they sit on the most common characters, so mishandling them drops 的
+  and 我 while keeping obscure ones. The converter treats a percentage as a reading filter (0% is
+  discarded) and never as a frequency.
+
+`--min-freq N` and `--limit N` trim the long tail if you want a smaller asset. `PinyinDictionaryTest`
+checks the shipped file, not a sample, so a botched conversion fails the build rather than shipping.
 
 ## Requirements
 
