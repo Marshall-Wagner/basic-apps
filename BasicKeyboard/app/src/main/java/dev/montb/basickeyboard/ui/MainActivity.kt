@@ -56,16 +56,42 @@ class MainActivity : ComponentActivity() {
                         onChoose = {
                             (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                                 .showInputMethodPicker()
-                        }
+                        },
+                        onLanguages = { openSubtypeSettings() }
                     )
                 }
             }
         }
     }
+
+    /**
+     * Open the system screen that enables/disables this keyboard's input languages.
+     *
+     * Android declares six subtypes for us but only *implicitly* enables the ones matching the
+     * device's system languages, so on a Chinese ROM you get English and Chinese and the rest stay
+     * invisible to the system switcher and the input-method picker. Only the user can turn the
+     * others on, and this is the screen that does it. Neither of the other two buttons reaches it:
+     * ACTION_INPUT_METHOD_SETTINGS lists the installed keyboards, and showInputMethodPicker only
+     * switches between languages already enabled.
+     *
+     * Not every ROM implements the subtype screen, so this falls back to the keyboard list.
+     */
+    private fun openSubtypeSettings() {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val id = imm.inputMethodList.firstOrNull { it.packageName == packageName }?.id
+        val subtypeScreen = Intent(Settings.ACTION_INPUT_METHOD_SUBTYPE_SETTINGS).apply {
+            if (id != null) putExtra(Settings.EXTRA_INPUT_METHOD_ID, id)
+        }
+        try {
+            startActivity(subtypeScreen)
+        } catch (_: Throwable) {
+            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
+        }
+    }
 }
 
 @Composable
-private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit) {
+private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit, onLanguages: () -> Unit) {
     // Top-aligned, not centered: with verticalScroll, Arrangement.Center only behaves while
     // the content fits (the tall ROG screens). On a shorter screen (HTC 10) the content
     // overflows and centering pushes the lower options, square keys, grid, vibration, password
@@ -94,6 +120,20 @@ private fun SetupScreen(onEnable: () -> Unit, onChoose: () -> Unit) {
         Text("2. Then select it as your keyboard:", style = MaterialTheme.typography.titleSmall)
         Button(onClick = onChoose, modifier = Modifier.padding(top = 8.dp)) {
             Text("Choose input method")
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("3. Optional, system language list:", style = MaterialTheme.typography.titleSmall)
+        Text(
+            "Android only offers the languages that match your phone's own system languages, so " +
+                "the rest stay hidden from the system keyboard switcher. Turn them on here to " +
+                "have them listed there too. The 🌐 globe key inside the keyboard always reaches " +
+                "all of them either way, so this is only about the system's own switcher.",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 2.dp)
+        )
+        Button(onClick = onLanguages, modifier = Modifier.padding(top = 8.dp)) {
+            Text("Enable input languages")
         }
         Spacer(Modifier.height(24.dp))
         Text("Keyboard height:", style = MaterialTheme.typography.titleSmall)
