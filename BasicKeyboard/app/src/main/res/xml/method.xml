@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declares the IME and its language subtypes. Each subtype shows up as a language
-     you can switch between via the globe key / system language switcher. CJK subtypes
-     can be added here in Phase 2. -->
+<!-- Declares the IME and its language subtypes. These are what the SYSTEM knows about: they are
+     what Settings -> Languages & input lists and what the system's own language switcher cycles
+     through. They must stay in step with the Lang enum in BasicKeyboardService, which is what the
+     in-app globe picker uses; "mode" is the key that ties the two together, so its value is a Lang
+     entry name exactly.
+
+     Only English is marked ASCII-capable. The pinyin and romaji modes do take latin keystrokes,
+     but they convert them rather than emitting them, so an app that asks for an ASCII-capable
+     subtype (a password field, say) should get English. -->
 <input-method xmlns:android="http://schemas.android.com/apk/res/android"
     android:settingsActivity="dev.montb.basickeyboard.ui.MainActivity">
 
@@ -9,12 +15,37 @@
         android:label="@string/subtype_english"
         android:imeSubtypeLocale="en_US"
         android:imeSubtypeMode="keyboard"
-        android:imeSubtypeExtraValue="layout=qwerty" />
+        android:isAsciiCapable="true"
+        android:imeSubtypeExtraValue="layout=qwerty,mode=ENGLISH" />
 
     <subtype
         android:label="@string/subtype_russian"
         android:imeSubtypeLocale="ru_RU"
         android:imeSubtypeMode="keyboard"
-        android:imeSubtypeExtraValue="layout=russian" />
+        android:imeSubtypeExtraValue="layout=russian,mode=RUSSIAN" />
+
+    <subtype
+        android:label="@string/subtype_chinese"
+        android:imeSubtypeLocale="zh_CN"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="layout=qwerty,mode=PINYIN" />
+
+    <subtype
+        android:label="@string/subtype_hiragana"
+        android:imeSubtypeLocale="ja_JP"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="layout=qwerty,mode=HIRAGANA" />
+
+    <subtype
+        android:label="@string/subtype_katakana"
+        android:imeSubtypeLocale="ja_JP"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="layout=qwerty,mode=KATAKANA" />
+
+    <subtype
+        android:label="@string/subtype_korean"
+        android:imeSubtypeLocale="ko_KR"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="layout=2set,mode=KOREAN" />
 
 </input-method>

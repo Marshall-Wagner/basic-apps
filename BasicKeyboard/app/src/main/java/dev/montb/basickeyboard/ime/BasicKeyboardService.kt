@@ -10,10 +10,18 @@ import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodInfo
+import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodSubtype
 
 /**
  * An input mode offered by the globe key. [label] goes on the space bar (kept short so it fits)
  * and doubles as a script sample; [description] names it in the language picker.
+ *
+ * Each entry also has a matching `<subtype>` in `res/xml/method.xml`, tied to it by that subtype's
+ * `mode=` extra value, which is the entry's [name] exactly. That pairing is what keeps the in-app
+ * picker and the system's own input-language list showing the same thing, so adding a mode here
+ * means adding a subtype there too.
  */
 internal enum class Lang(val label: String, val description: String) {
     ENGLISH("English", "English"),
@@ -33,6 +41,11 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
 
     private enum class Mode { LETTERS, SYMBOLS, SYMBOLS2 }
     private enum class NumPad { NONE, NUMERIC, PHONE }
+
+    private companion object {
+        /** Key in a subtype's extra value holding the [Lang] name it stands for. */
+        const val EXTRA_MODE = "mode"
+    }
 
     private var lang = Lang.ENGLISH
     private var mode = Mode.LETTERS
@@ -61,6 +74,10 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
     private val clipboardManager: ClipboardManager? by lazy {
         getSystemService(CLIPBOARD_SERVICE) as? ClipboardManager
     }
+
+    private val inputMethodManager: InputMethodManager? by lazy {
+        getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+    }
     // Live clipboard updates: when text is copied, even while the keyboard is already up on the
     // same field (where onStartInput won't fire again), fold it into history and refresh the top
     // strip, so the newest copy appears immediately instead of stale older entries.
@@ -81,6 +98,10 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
     override fun onCreate() {
         super.onCreate()
         clipboardManager?.addPrimaryClipChangedListener(clipListener)
+        // Start in whatever mode the system has selected for us. The in-app mode is not persisted
+        // across restarts, so without this a cold start would always land on English regardless of
+        // what the system's language list says is active.
+        langForSubtype(inputMethodManager?.currentInputMethodSubtype)?.let { lang = it }
     }
 
     override fun onDestroy() {
@@ -588,13 +609,79 @@ class BasicKeyboardService : InputMethodService(), KeyboardView.Listener {
         )
     }
 
+    /** Picked from the in-app globe list: switch, then tell the system so its own input-language
+     *  list agrees with what the keyboard is actually doing. */
     private fun selectLanguage(choice: Lang) {
+        applyLanguage(choice)
+        announceSubtype(choice)
+    }
+
+    private fun applyLanguage(choice: Lang) {
         lang = choice
         // Read the pinyin dictionary the first time Chinese is chosen, so a session that never
         // uses it pays nothing.
         if (lang == Lang.PINYIN) PinyinEngine.ensureLoaded(this)
         mode = Mode.LETTERS
-        applyLayout()   // also puts the key grid back as the visible body
+        // The system can switch our subtype while the keyboard is hidden, before the input view
+        // has ever been built, so only re-lay-out when there is something to lay out. The picker
+        // path always has a view; this guard is for the system-driven one.
+        if (::keyboardView.isInitialized) applyLayout()   // also restores the key grid as the body
+    }
+
+    /**
+     * The system switched our subtype (its own language switcher, or the keyboard picker). Follow
+     * it, so the two never disagree. Before this existed the declared subtypes were decorative:
+     * choosing one did nothing, because the service never read them.
+     */
+    override fun onCurrentInputMethodSubtypeChanged(newSubtype: InputMethodSubtype) {
+        super.onCurrentInputMethodSubtypeChanged(newSubtype)
+        val choice = langForSubtype(newSubtype) ?: return
+        // Also the loop-breaker: selectLanguage set [lang] before telling the system, so the
+        // change notification it causes comes back in already matching and stops here.
+        if (choice == lang) return
+        commitComposingRaw()   // never carry a half-composed buffer into a different script
+        applyLanguage(choice)
+    }
+
+    /** The mode a subtype stands for, from its `mode=` extra value. Null for anything we do not
+     *  recognise, including another IME's subtype, so an unexpected value is ignored rather than
+     *  switching the keyboard to something arbitrary. */
+    private fun langForSubtype(subtype: InputMethodSubtype?): Lang? {
+        val mode = subtype?.getExtraValueOf(EXTRA_MODE) ?: return null
+        return Lang.entries.firstOrNull { it.name == mode }
+    }
+
+    private fun myInputMethodInfo(): InputMethodInfo? =
+        inputMethodManager?.inputMethodList?.firstOrNull { it.packageName == packageName }
+
+    private fun subtypeFor(info: InputMethodInfo, choice: Lang): InputMethodSubtype? {
+        for (i in 0 until info.subtypeCount) {
+            val subtype = info.getSubtypeAt(i)
+            if (subtype.getExtraValueOf(EXTRA_MODE) == choice.name) return subtype
+        }
+        return null
+    }
+
+    /**
+     * Tell the system which subtype we switched to, so Settings and the system language switcher
+     * show the current mode instead of a stale one.
+     *
+     * Needs API 28. On 26/27 the in-app picker still works and the system list still switches the
+     * keyboard (that direction is [onCurrentInputMethodSubtypeChanged], which is older); only this
+     * one direction is missing there, so the system label can lag on those two versions.
+     */
+    private fun announceSubtype(choice: Lang) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
+        val info = myInputMethodInfo() ?: return
+        val subtype = subtypeFor(info, choice) ?: return
+        try {
+            // info.id rather than a hand-built ComponentName: it is the exact id the system
+            // registered us under, so there is no chance of the two spellings disagreeing.
+            switchInputMethod(info.id, subtype)
+        } catch (_: Throwable) {
+            // A ROM that refuses the switch must not take the keyboard down with it; the in-app
+            // mode has already changed and typing carries on regardless.
+        }
     }
 
     private fun showEmoji() {

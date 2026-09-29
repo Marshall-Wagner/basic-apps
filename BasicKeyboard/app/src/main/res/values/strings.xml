@@ -1,5 +1,11 @@
 <resources>
     <string name="app_name">Basic Keyboard</string>
+    <!-- Subtype labels, shown in the system's input-language list. Named in their own script,
+         which is the convention there and matches what the space bar shows in each mode. -->
     <string name="subtype_english">English</string>
     <string name="subtype_russian">Русский</string>
+    <string name="subtype_chinese">中文</string>
+    <string name="subtype_hiragana">ひらがな</string>
+    <string name="subtype_katakana">カタカナ</string>
+    <string name="subtype_korean">한국어</string>
 </resources>
