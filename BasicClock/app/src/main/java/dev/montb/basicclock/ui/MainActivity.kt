@@ -89,6 +89,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
@@ -306,27 +307,53 @@ private fun NextAlarmSummary(alarms: List<Alarm>) {
             )
         } else {
             val (alarm, at) = next
-            val zone = runCatching { ZoneId.of(alarm.zoneId) }.getOrDefault(ZoneId.systemDefault())
-            val local = at.atZone(ZoneId.systemDefault())
-            val pattern = if (is24) "EEE HH:mm" else "EEE h:mm a"
+            Text("Next alarm", style = MaterialTheme.typography.labelMedium, color = offColor)
+            // Your time and the alarm's zone side by side: the alarm is set in its zone but rings
+            // in yours, and the two can fall on different days.
+            ZoneTimes(at, alarm.zoneId, is24)
             Text(
-                "Next alarm  " + local.format(DateTimeFormatter.ofPattern(pattern)),
-                style = MaterialTheme.typography.titleMedium,
-                color = onColor
+                alarm.label.takeIf { it.isNotBlank() } ?: "Alarm",
+                style = MaterialTheme.typography.bodySmall,
+                color = offColor,
+                maxLines = 1, overflow = TextOverflow.Ellipsis
             )
-            val detail = buildString {
-                append(alarm.label.takeIf { it.isNotBlank() } ?: "Alarm")
-                // Only worth naming the zone when it is not the phone's own, since that is the
-                // case where the listed time and the ringing time look like they disagree.
-                if (zone != ZoneId.systemDefault()) append("  ·  ${alarm.zoneId}")
-            }
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = offColor)
         }
         Text(
             "$armed of ${alarms.size} on",
             style = MaterialTheme.typography.bodySmall,
             color = if (armed == 0) offColor else onColor
         )
+    }
+}
+
+/**
+ * One instant shown in the phone's zone and, when it differs, the alarm's own zone, side by side.
+ * The phone's column comes first because that is when it actually rings for you.
+ */
+@Composable
+private fun ZoneTimes(at: Instant, targetZoneId: String, is24: Boolean) {
+    val phone = ZoneId.systemDefault()
+    val target = runCatching { ZoneId.of(targetZoneId) }.getOrNull()
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        ZoneTimeColumn(at.atZone(phone), "${Zones.cityLabel(phone.id)} (your time)", is24, Modifier.weight(1f))
+        if (target != null && target.id != phone.id) {
+            ZoneTimeColumn(at.atZone(target), Zones.cityLabel(target.id), is24, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun ZoneTimeColumn(zoned: ZonedDateTime, caption: String, is24: Boolean, modifier: Modifier) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(modifier) {
+        Text(
+            zoned.format(DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a")),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        // Each column names its own day: 9 PM Thursday in Chicago is 10 AM Friday in Shanghai.
+        Text(zoned.format(DateTimeFormatter.ofPattern("EEEE")), style = MaterialTheme.typography.bodySmall, color = muted)
+        Text(caption, style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

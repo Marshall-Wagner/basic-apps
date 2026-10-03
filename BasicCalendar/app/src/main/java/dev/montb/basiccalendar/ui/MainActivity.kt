@@ -83,6 +83,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import dev.montb.basiccalendar.alarm.EventScheduler
 import dev.montb.basiccalendar.data.CalendarEvent
+import dev.montb.basiccalendar.data.EventList
 import dev.montb.basiccalendar.data.EventStore
 import dev.montb.basiccalendar.data.RecentZonesStore
 import dev.montb.basiccalendar.data.Repeat
@@ -95,6 +96,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
@@ -104,21 +106,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { BasicCalendarTheme { CalendarApp() } }
-    }
-}
-
-/* ------------------------------ occurrence logic ------------------------------ */
-
-/** Does [event] have an occurrence exactly on [date]? Mirrors CalendarEvent.nextTrigger's
- *  recurrence rules (repeats never slide onto a date the day-of-month/month doesn't allow). */
-private fun occursOn(event: CalendarEvent, date: LocalDate): Boolean {
-    val anchor = event.anchorDate ?: return false
-    return when (event.repeat) {
-        Repeat.NONE -> date == anchor
-        Repeat.WEEKLY -> !date.isBefore(anchor) && date.dayOfWeek == anchor.dayOfWeek
-        Repeat.MONTHLY -> !date.isBefore(anchor) && date.dayOfMonth == event.day
-        Repeat.YEARLY -> !date.isBefore(anchor) &&
-            date.monthValue == event.month && date.dayOfMonth == event.day
     }
 }
 
@@ -172,6 +159,7 @@ private fun CalendarApp() {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (!fsiAllowed) FullScreenIntentBanner(onClick = { openFullScreenSettings(context) })
+            if (events.isNotEmpty()) NextEventSummary(events)
 
             MonthHeader(
                 month = month,
@@ -182,11 +170,11 @@ private fun CalendarApp() {
             MonthGrid(
                 month = month,
                 selected = selected,
-                hasEvent = { date -> events.any { it.enabled && occursOn(it, date) } },
+                hasEvent = { date -> events.any { it.enabled && EventList.occursOn(it, date) } },
                 onPick = { date -> selected = if (selected == date) null else date }
             )
             HorizontalDivider()
-            EventList(
+            EventListPanel(
                 modifier = Modifier.weight(1f),
                 events = events,
                 selected = selected,
@@ -331,10 +319,91 @@ private fun DayCell(
     }
 }
 
+/* ------------------------------ next-event banner ------------------------------ */
+
+/**
+ * What is coming up next, shown in your own time AND the event's time zone side by side, since
+ * an event is set in its zone but rings in yours, and the two can fall on different days.
+ */
+@Composable
+private fun NextEventSummary(events: List<CalendarEvent>) {
+    val context = LocalContext.current
+    val is24 = remember { DateFormat.is24HourFormat(context) }
+    val on = EventList.enabledCount(events)
+    val next = EventList.next(events)
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        if (next == null) {
+            Text(
+                if (on == 0) "No events are on" else "Nothing coming up",
+                style = MaterialTheme.typography.titleMedium,
+                color = muted
+            )
+        } else {
+            val (event, start) = next
+            Text("Next event", style = MaterialTheme.typography.labelMedium, color = muted)
+            ZoneTimes(start, event.zoneId, is24, showDate = true)
+            val reminder = when {
+                !event.notify -> "No reminder"
+                else -> "Reminder " + leadSummary(event.leadMinutes).replaceFirstChar { it.lowercase() }
+            }
+            Text(
+                "${event.label.ifBlank { "Event" }}  ·  $reminder",
+                style = MaterialTheme.typography.bodySmall,
+                color = muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+        Text("$on of ${events.size} on", style = MaterialTheme.typography.bodySmall, color = muted)
+    }
+}
+
+/**
+ * One instant shown in the phone's zone and, when it differs, the event's own zone, side by side.
+ * The phone's column comes first because that is when it actually rings for you.
+ */
+@Composable
+private fun ZoneTimes(at: Instant, targetZoneId: String, is24: Boolean, showDate: Boolean) {
+    val phone = ZoneId.systemDefault()
+    val target = runCatching { ZoneId.of(targetZoneId) }.getOrNull()
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        ZoneTimeColumn(at.atZone(phone), "${Zones.cityLabel(phone.id)} (your time)", is24, showDate, Modifier.weight(1f))
+        if (target != null && target.id != phone.id) {
+            ZoneTimeColumn(at.atZone(target), Zones.cityLabel(target.id), is24, showDate, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun ZoneTimeColumn(zoned: ZonedDateTime, caption: String, is24: Boolean, showDate: Boolean, modifier: Modifier) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    // Each column names its own day: 9 PM Thursday in Chicago is 10 AM Friday in Shanghai.
+    val dayPattern = when {
+        !showDate -> "EEE"
+        zoned.year == LocalDate.now(zoned.zone).year -> "EEE, MMM d"
+        else -> "EEE, MMM d yyyy"
+    }
+    Column(modifier) {
+        Text(
+            zoned.format(DateTimeFormatter.ofPattern(if (is24) "HH:mm" else "h:mm a")),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(zoned.format(DateTimeFormatter.ofPattern(dayPattern)), style = MaterialTheme.typography.bodySmall, color = muted)
+        Text(caption, style = MaterialTheme.typography.bodySmall, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 /* ---------------------------------- event list -------------------------------- */
 
 @Composable
-private fun EventList(
+private fun EventListPanel(
     modifier: Modifier = Modifier,
     events: List<CalendarEvent>,
     selected: LocalDate?,
@@ -342,11 +411,10 @@ private fun EventList(
     onClick: (CalendarEvent) -> Unit,
     onDelete: (CalendarEvent) -> Unit
 ) {
-    val shown: List<CalendarEvent> = if (selected != null) {
-        events.filter { occursOn(it, selected) }
-    } else {
-        events.sortedWith(compareBy(nullsLast<Long>()) { it.nextTrigger()?.toEpochMilli() })
-    }
+    // Calendar order in both views: by when each event happens, not when its reminder rings or
+    // whether it is switched on (see EventList for why the old reminder-time order misled).
+    val shown: List<CalendarEvent> =
+        if (selected != null) EventList.onDay(events, selected) else EventList.upcoming(events)
     val header = if (selected != null)
         "Events on ${selected.format(DateTimeFormatter.ofPattern("EEE, MMM d"))}"
     else "Upcoming"
@@ -373,7 +441,12 @@ private fun EventList(
                 contentPadding = PaddingValues(bottom = 88.dp)
             ) {
                 items(shown, key = { it.id }) { ev ->
-                    EventRow(ev, onToggle = { onToggle(ev, it) }, onClick = { onClick(ev) }, onDelete = { onDelete(ev) })
+                    EventRow(
+                        ev,
+                        // The occurrence this row stands for: the picked day, or the next one.
+                        date = selected ?: EventList.displayDate(ev),
+                        onToggle = { onToggle(ev, it) }, onClick = { onClick(ev) }, onDelete = { onDelete(ev) }
+                    )
                     HorizontalDivider()
                 }
             }
@@ -384,6 +457,7 @@ private fun EventList(
 @Composable
 private fun EventRow(
     event: CalendarEvent,
+    date: LocalDate?,
     onToggle: (Boolean) -> Unit,
     onClick: () -> Unit,
     onDelete: () -> Unit
@@ -395,8 +469,10 @@ private fun EventRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
+            // The occurrence's date, not the stored start date: a weekly event begun in January
+            // should read as next Monday, or a correctly ordered list would look shuffled.
             Text(
-                event.anchorDate?.format(DateTimeFormatter.ofPattern("EEE, MMM d yyyy")) ?: "Invalid date",
+                date?.format(DateTimeFormatter.ofPattern("EEE, MMM d yyyy")) ?: "Invalid date",
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
@@ -407,7 +483,7 @@ private fun EventRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
-            event.anchorDate?.let { d ->
+            date?.let { d ->
                 localTimeHint(d, event.hour, event.minute, event.zoneId, is24)?.let { hint ->
                     Text(
                         hint,

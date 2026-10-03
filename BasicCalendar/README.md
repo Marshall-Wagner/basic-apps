@@ -14,8 +14,9 @@ A minimal **date and time-zone alarm calendar**: set an alarm for a specific fut
 
 ## Features
 
+- **Next-event banner** at the top, showing the next event in your time and in the event's own zone side by side, with its reminder setting and how many events are on
 - **Auto-silence** after 10 minutes, so an unattended reminder cannot ring indefinitely, and a **Stop** action on the notification itself, so it can always be silenced without relying on the full-screen alarm screen
-- **Month grid + event list**: a tappable month calendar with today ringed, the selected day highlighted, and a dot on days that have an alarm; the list below shows that day's events, or all upcoming events sorted by which fires next
+- **Month grid + event list**: a tappable month calendar with today ringed, the selected day highlighted, and a dot on days that have an alarm; the list below shows that day's events in time order, or every event in calendar order (by when it happens, so a switched-off event keeps its place by date and a repeating one shows its next occurrence)
 - **Date + time in a chosen time zone**: an event is anchored to a real calendar date and wall-clock time *in* a picked region, so it rings at the correct absolute moment across DST and even if the phone travels to another zone
 - **Repeats**: once, weekly, monthly, or yearly; a one-off switches itself off after ringing, repeats re-arm their next occurrence
 - **Reminder lead time**: ring at the event, or 30 or 60 minutes before it, for a heads-up ahead of time (repeats keep the same lead each occurrence); or **None** for a silent calendar entry that shows on the date but arms no alarm or notification
