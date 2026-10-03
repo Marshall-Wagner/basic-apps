@@ -7,6 +7,7 @@ import android.content.Intent
 import dev.montb.basicclock.data.Alarm
 import dev.montb.basicclock.data.AlarmStore
 import dev.montb.basicclock.ui.MainActivity
+import java.time.Instant
 
 /**
  * Arms/cancels alarms via [AlarmManager.setAlarmClock], the exact, Doze-exempt API that
@@ -26,9 +27,18 @@ object AlarmScheduler {
         )
     }
 
-    fun schedule(context: Context, alarm: Alarm) {
+    /**
+     * Arm [alarm] for its next occurrence after [from].
+     *
+     * [from] exists for re-arming a repeating alarm the moment it fires. AlarmManager can deliver
+     * the broadcast a hair before the exact instant, and [Alarm.nextTrigger] only skips an
+     * occurrence that is not still in the future, so re-arming with a plain "now" can pick the
+     * very slot that just rang and fire again immediately. Callers that have just fired pass a
+     * time safely past it.
+     */
+    fun schedule(context: Context, alarm: Alarm, from: Instant = Instant.now()) {
         val am = context.getSystemService(AlarmManager::class.java) ?: return
-        val trigger = alarm.nextTrigger() ?: run { cancel(context, alarm); return }
+        val trigger = alarm.nextTrigger(from) ?: run { cancel(context, alarm); return }
         // Tapping the status-bar alarm icon opens the app.
         val show = PendingIntent.getActivity(
             context, alarm.requestCode,

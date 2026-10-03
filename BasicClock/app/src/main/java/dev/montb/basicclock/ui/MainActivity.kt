@@ -14,6 +14,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -78,6 +79,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import dev.montb.basicclock.alarm.AlarmScheduler
 import dev.montb.basicclock.data.Alarm
+import dev.montb.basicclock.data.AlarmList
 import dev.montb.basicclock.data.AlarmStore
 import dev.montb.basicclock.data.RecentZonesStore
 import dev.montb.basicclock.data.WorldClockStore
@@ -206,13 +208,17 @@ private fun ClockApp() {
                             )
                         }
                     } else {
+                        // Armed alarms first, soonest to ring at the top, so one that is switched
+                        // on can never sit unnoticed below a pile of switched-off ones.
+                        val ordered = AlarmList.sorted(alarms)
                         // Bottom padding so the last alarm can scroll clear of the FAB
                         // (otherwise the + button covers the final row's on/off toggle).
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 88.dp)
                         ) {
-                            items(alarms, key = { it.id }) { alarm ->
+                            item { NextAlarmSummary(alarms) }
+                            items(ordered, key = { it.id }) { alarm ->
                                 AlarmRow(
                                     alarm = alarm,
                                     onToggle = { on ->
@@ -269,6 +275,57 @@ private fun ClockApp() {
                 addingCity = false
             },
             onDismiss = { addingCity = false }
+        )
+    }
+}
+
+/**
+ * A banner answering "is anything going to wake me, and when". Without it the only way to know
+ * was to read every row's toggle, which is how a forgotten alarm goes off at 3am unannounced.
+ */
+@Composable
+private fun NextAlarmSummary(alarms: List<Alarm>) {
+    val context = LocalContext.current
+    val is24 = remember { DateFormat.is24HourFormat(context) }
+    val armed = AlarmList.enabledCount(alarms)
+    val next = AlarmList.next(alarms)
+
+    val onColor = MaterialTheme.colorScheme.primary
+    val offColor = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        if (next == null) {
+            Text(
+                if (armed == 0) "No alarms are on" else "No alarm is due",
+                style = MaterialTheme.typography.titleMedium,
+                color = offColor
+            )
+        } else {
+            val (alarm, at) = next
+            val zone = runCatching { ZoneId.of(alarm.zoneId) }.getOrDefault(ZoneId.systemDefault())
+            val local = at.atZone(ZoneId.systemDefault())
+            val pattern = if (is24) "EEE HH:mm" else "EEE h:mm a"
+            Text(
+                "Next alarm  " + local.format(DateTimeFormatter.ofPattern(pattern)),
+                style = MaterialTheme.typography.titleMedium,
+                color = onColor
+            )
+            val detail = buildString {
+                append(alarm.label.takeIf { it.isNotBlank() } ?: "Alarm")
+                // Only worth naming the zone when it is not the phone's own, since that is the
+                // case where the listed time and the ringing time look like they disagree.
+                if (zone != ZoneId.systemDefault()) append("  ·  ${alarm.zoneId}")
+            }
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = offColor)
+        }
+        Text(
+            "$armed of ${alarms.size} on",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (armed == 0) offColor else onColor
         )
     }
 }

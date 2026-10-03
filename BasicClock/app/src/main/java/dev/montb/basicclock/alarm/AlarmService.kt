@@ -9,7 +9,9 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
@@ -27,17 +29,22 @@ class AlarmService : Service() {
 
     private var player: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private val autoSilence = Handler(Looper.getMainLooper())
+    private val silenceRunnable = Runnable { stopSelf() }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
+        // A null intent means the system recreated us on its own rather than an alarm firing.
+        // Treat it exactly like a stop: there is no alarm to ring, and ringing anyway is how a
+        // killed service turns into a phantom alarm nobody can silence.
+        if (intent == null || intent.action == ACTION_STOP) {
             stopSelf()
             return START_NOT_STICKY
         }
 
-        val alarm = intent?.getStringExtra(EXTRA_ID)?.let { AlarmStore.get(this, it) }
-        val label = intent?.getStringExtra(EXTRA_LABEL)
+        val alarm = intent.getStringExtra(EXTRA_ID)?.let { AlarmStore.get(this, it) }
+        val label = intent.getStringExtra(EXTRA_LABEL)
         val notification = AlarmNotifier.build(this, alarm, label)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(AlarmNotifier.NOTIF_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
@@ -46,7 +53,16 @@ class AlarmService : Service() {
         }
 
         startRinging(alarm)
-        return START_STICKY
+        // Stop ringing on our own after a while. An alarm that rings until somebody finds the
+        // off switch is the worst failure mode this app has, so it is bounded.
+        autoSilence.removeCallbacks(silenceRunnable)
+        autoSilence.postDelayed(silenceRunnable, AUTO_SILENCE_MS)
+
+        // NOT sticky. START_STICKY asks Android to recreate this service after it is killed,
+        // handing it a null intent: no alarm id, so it would ring the default tone with no way
+        // to tell which alarm it was, and survive being dismissed. An alarm must only ever ring
+        // because AlarmManager fired, and AlarmManager owns that schedule, not this service.
+        return START_NOT_STICKY
     }
 
     private fun startRinging(alarm: Alarm?) {
@@ -74,11 +90,15 @@ class AlarmService : Service() {
     }
 
     override fun onDestroy() {
+        autoSilence.removeCallbacks(silenceRunnable)
         runCatching { player?.stop() }
         runCatching { player?.release() }
         player = null
         vibrator?.cancel()
         vibrator = null
+        // Clear the ongoing notification too. It is setOngoing/setAutoCancel(false), so if the
+        // service goes away without this it can be left on screen with nothing behind it.
+        AlarmNotifier.dismiss(this)
         super.onDestroy()
     }
 
@@ -86,6 +106,9 @@ class AlarmService : Service() {
         const val ACTION_STOP = "dev.montb.basicclock.action.STOP"
         const val EXTRA_ID = "alarm_id"
         const val EXTRA_LABEL = "label"
+
+        /** How long an unattended alarm rings before silencing itself. */
+        const val AUTO_SILENCE_MS = 10 * 60 * 1000L
 
         fun start(context: Context, alarmId: String) {
             val i = Intent(context, AlarmService::class.java).putExtra(EXTRA_ID, alarmId)

@@ -16,6 +16,8 @@ A minimal **clock** app (time-zone-anchored alarms, world clock, stopwatch, and 
 
 ## Features
 
+- **Next-alarm banner** at the top of the list, plus armed alarms sorted above switched-off ones, soonest first. An alarm that is on can never hide below a pile of disabled ones, which is how a forgotten one goes off in the middle of the night
+- **Auto-silence** after 10 minutes, so an unattended alarm cannot ring indefinitely, and a **Stop** action on the notification itself, so it can always be silenced without relying on the full-screen alarm screen
 - **Time-zone-anchored alarms**: set "9:00 AM New York time" and it rings at the correct *local* moment, staying right across DST changes and even if the phone travels to another zone
 - **Full editor**: Material time picker, a searchable time-zone picker with a Recent list and city + country labels, repeat-day chips, a ringtone picker, and a label
 - **Reliable ringing**: a foreground service plays the looping alarm sound + vibration behind a full-screen notification, so it's heard even when Android downgrades the full-screen intent to a heads-up

@@ -7,6 +7,7 @@ import android.content.Intent
 import dev.montb.basiccalendar.data.CalendarEvent
 import dev.montb.basiccalendar.data.EventStore
 import dev.montb.basiccalendar.ui.MainActivity
+import java.time.Instant
 
 /**
  * Arms/cancels events via [AlarmManager.setAlarmClock], the exact, Doze-exempt API that also
@@ -26,11 +27,20 @@ object EventScheduler {
         )
     }
 
-    fun schedule(context: Context, event: CalendarEvent) {
+    /**
+     * Arm [event] for its next occurrence after [from].
+     *
+     * [from] exists for re-arming a repeating event the moment it fires. AlarmManager can deliver
+     * the broadcast a hair before the exact instant, and [CalendarEvent.nextTrigger] only skips an
+     * occurrence that is not still in the future, so re-arming with a plain "now" can pick the
+     * very slot that just rang and fire again immediately. Callers that have just fired pass a
+     * time safely past it.
+     */
+    fun schedule(context: Context, event: CalendarEvent, from: Instant = Instant.now()) {
         val am = context.getSystemService(AlarmManager::class.java) ?: return
         // A silent event (notify = false) shows on the calendar but arms no alarm / notification.
         if (!event.notify) { cancel(context, event); return }
-        val trigger = event.nextTrigger() ?: run { cancel(context, event); return }
+        val trigger = event.nextTrigger(from) ?: run { cancel(context, event); return }
         // Tapping the status-bar alarm icon opens the app.
         val show = PendingIntent.getActivity(
             context, event.requestCode,

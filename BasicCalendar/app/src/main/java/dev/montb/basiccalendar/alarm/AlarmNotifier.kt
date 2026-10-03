@@ -28,8 +28,18 @@ object AlarmNotifier {
             context, event?.requestCode ?: 0, ring,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        // Stop straight from the notification. Without this the ONLY way to silence a ringing
+        // event was RingActivity via the full-screen intent, which Android 14+ downgrades to a
+        // heads-up notification unless full-screen-intent access is granted, leaving an ongoing,
+        // non-dismissible notification and no off switch.
+        val stop = PendingIntent.getService(
+            context, 0,
+            Intent(context, AlarmService::class.java).setAction(AlarmService.ACTION_STOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(context, BasicCalendarApp.CHANNEL_ALARM)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .addAction(0, "Stop", stop)
             .setContentTitle(event?.label?.takeIf { it.isNotBlank() } ?: "Event")
             .setContentText(
                 event?.let {

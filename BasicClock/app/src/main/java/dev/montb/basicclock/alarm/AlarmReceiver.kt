@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import dev.montb.basicclock.data.AlarmStore
+import java.time.Instant
 
 /**
  * Woken by AlarmManager at an alarm's instant. Shows the ringing UI and then keeps the
@@ -21,7 +22,10 @@ class AlarmReceiver : BroadcastReceiver() {
         AlarmService.start(context, alarm.id)
 
         if (alarm.days.isNotEmpty()) {
-            AlarmScheduler.schedule(context, alarm)          // repeating: arm the next day
+            // Re-arm from a minute past now, not from now. Alarms are minute-granular, so this
+            // cannot skip a real occurrence, but it does guarantee we never re-pick the slot that
+            // just rang, which would fire the alarm a second time straight away.
+            AlarmScheduler.schedule(context, alarm, Instant.now().plusSeconds(60))
         } else {
             AlarmStore.upsert(context, alarm.copy(enabled = false))  // one-shot: done
         }

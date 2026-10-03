@@ -15,6 +15,24 @@ class AlarmNextTriggerTest {
     private fun at(iso: String): Instant = Instant.parse(iso)
 
     @Test
+    fun reArmingAtTheMomentOfFiringDoesNotPickTheSameOccurrence() {
+        // AlarmReceiver re-arms a repeating alarm the instant it fires. nextTrigger only skips an
+        // occurrence while it is NOT still in the future, so re-arming from a "now" that lands a
+        // hair before the fired instant would return that same instant and ring again at once.
+        // The receiver guards this by re-arming from a minute later; this pins that it works.
+        val daily = Alarm(hour = 3, minute = 0, zoneId = "UTC", days = (1..7).toSet())
+        val fired = at("2026-01-01T03:00:00Z")
+
+        // The hazard, stated plainly: a clock a millisecond slow re-picks the slot just rung.
+        assertEquals(fired, daily.nextTrigger(fired.minusMillis(1)))
+
+        // With the guard the next occurrence is tomorrow, which is what the receiver arms.
+        assertEquals(at("2026-01-02T03:00:00Z"), daily.nextTrigger(fired.plusSeconds(60)))
+        // And stepping forward a minute cannot skip a real occurrence.
+        assertEquals(at("2026-01-02T03:00:00Z"), daily.nextTrigger(fired))
+    }
+
+    @Test
     fun disabledAlarmNeverFires() {
         val alarm = Alarm(hour = 9, minute = 0, zoneId = "UTC", enabled = false)
         assertNull(alarm.nextTrigger(at("2026-01-01T08:00:00Z")))

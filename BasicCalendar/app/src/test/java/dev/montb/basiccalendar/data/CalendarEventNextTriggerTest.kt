@@ -48,6 +48,24 @@ class CalendarEventNextTriggerTest {
     }
 
     @Test
+    fun reArmingAtTheMomentOfFiringDoesNotPickTheSameOccurrence() {
+        // EventReceiver re-arms a repeating event the instant it fires. nextTrigger only skips an
+        // occurrence while it is NOT still in the future, so re-arming from a "now" that lands a
+        // hair before the fired instant would return that same instant and ring again at once.
+        // The receiver guards this by re-arming from a minute later; this pins that it works.
+        val weekly = event(2026, 1, 1, 8, 0, repeat = Repeat.WEEKLY)
+        val fired = at("2026-01-01T08:00:00Z")
+
+        // The hazard, stated plainly: a clock a millisecond slow re-picks the slot just rung.
+        assertEquals(fired, weekly.nextTrigger(fired.minusMillis(1)))
+
+        // With the guard the next occurrence is a week out, which is what the receiver arms.
+        assertEquals(at("2026-01-08T08:00:00Z"), weekly.nextTrigger(fired.plusSeconds(60)))
+        // And stepping forward a minute cannot skip a real occurrence.
+        assertEquals(at("2026-01-08T08:00:00Z"), weekly.nextTrigger(fired))
+    }
+
+    @Test
     fun weeklyStepsForwardToTheNextOccurrence() {
         // Anchor Thursday 2026-01-01 08:00; from Jan 10 the next weekly occurrence is Jan 15.
         assertEquals(

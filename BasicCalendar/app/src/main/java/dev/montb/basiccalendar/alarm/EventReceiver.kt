@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import dev.montb.basiccalendar.data.EventStore
 import dev.montb.basiccalendar.data.Repeat
+import java.time.Instant
 
 /**
  * Woken by AlarmManager at an event's instant. Shows the ringing UI and then keeps the
@@ -24,9 +25,12 @@ class EventReceiver : BroadcastReceiver() {
         if (event.repeat == Repeat.NONE) {
             EventStore.upsert(context, event.copy(enabled = false))  // one-off: done
         } else {
-            // nextTrigger() uses isAfter(now), so the occurrence that just fired is skipped
-            // and the following one is armed.
-            EventScheduler.schedule(context, event)
+            // Re-arm from a minute past now, not from now. nextTrigger() skips an occurrence
+            // only while it is not still in the future, and AlarmManager can deliver this
+            // broadcast a hair early, in which case "now" would re-pick the slot that just rang
+            // and fire the event a second time straight away. Events are minute-granular, so
+            // stepping forward a minute cannot skip a real occurrence.
+            EventScheduler.schedule(context, event, Instant.now().plusSeconds(60))
         }
     }
 
